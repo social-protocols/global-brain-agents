@@ -1,0 +1,13 @@
+name = "GlobalBrainAgents"
+uuid = "bd945876-f776-47cf-a022-593e911efc45"
+authors = ["Johannes Nakayama <johannes.nakayama@rwth-aachen.de>"]
+version = "0.1.0"
+
+[deps]
+Agents = "46ada45e-f475-11e8-01d0-f70cc89e6671"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+GlobalBrain = "098ac8c9-7e3b-475a-8ab5-e2cc3c93bac3"
+OpenAI = "e9f21f70-7185-4079-aca2-91159181367c"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SQLite = "0aa819cd-b072-5ff4-a722-6bc24af294d9"
