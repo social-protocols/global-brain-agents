@@ -10,17 +10,31 @@ db <- dbConnect(RSQLite::SQLite(), DATABASE_PATH)
 ui <- fluidPage(
     h1("LLM Experiment: Posts"),
     numericInput("post_id", "Post ID", value = 1, min = 1, max = 100),
-    tableOutput("postDetails"),
+    tableOutput("complete_thread"),
     hr(),
-    tableOutput("allPosts")
+    tableOutput("all_posts")
 )
 
 server <- function(input, output, session) {
-    output$allPosts <- renderTable({
-        dbGetQuery(db, "SELECT * FROM posts") %>% data.frame()
+    output$all_posts <- renderTable({
+        posts <- dbGetQuery(db, "SELECT * FROM posts") %>% data.frame()
+        votes <- dbGetQuery(db, "SELECT * FROM votes") %>% data.frame()
+        votes_summary <-
+            votes %>%
+            group_by(post_id) %>%
+            summarise(
+                upvotes = sum(upvote),
+                votes = n(),
+                downvotes = votes - upvotes
+            ) %>%
+            ungroup() %>%
+            relocate(post_id, upvotes, downvotes, votes)
+        posts %>%
+            left_join(votes_summary, by = c("id" = "post_id")) %>%
+            arrange(timestamp)
     })
 
-    output$postDetails <- renderTable({
+    output$complete_thread <- renderTable({
         post_id <- input$post_id
         post <- dbGetQuery(
             db,
@@ -28,6 +42,21 @@ server <- function(input, output, session) {
             params = list(post_id)
         ) %>% data.frame()
         parent_thread <- get_parent_thread(post_id, db)
+        votes <- dbGetQuery(db, "SELECT * FROM votes") %>%
+            data.frame()
+        votes_summary <-
+            votes %>%
+            group_by(post_id) %>%
+            summarise(
+                upvotes = sum(upvote),
+                votes = n(),
+                downvotes = votes - upvotes
+            ) %>%
+            ungroup() %>%
+            relocate(post_id, upvotes, downvotes, votes)
+        parent_thread %>%
+            inner_join(votes_summary, by = c("id" = "post_id")) %>%
+            arrange(timestamp)
     })
 }
 
