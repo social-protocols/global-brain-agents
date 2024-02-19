@@ -9,3 +9,6 @@ sqlite:
 
 shiny:
     Rscript -e "shiny::runApp('app', port = 3456)"
+
+personas:
+    julia --project scripts/personas.jl
