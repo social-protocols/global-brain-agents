@@ -35,7 +35,7 @@ TOOLS = [
                     ),
                     "traits" => Dict(
                         "type" => "string",
-                        "description" => "A description of the agent's in 100 to 200 characters",
+                        "description" => "A description of the agent's character and how they interact with others in 100 to 200 characters",
                     ),
                 ),
             ),
@@ -66,7 +66,7 @@ messages = [
     Dict(
         "role" => "system",
         "content" => """
-            Some personas should be good people and some can be assholes.
+            Personas' names should should not all be Anglo-American.
         """
     ),
 ]
@@ -121,10 +121,11 @@ for i in 1:10
         continue
     end
     push!(personas, persona)
+    @info "Created persona: $persona"
 end
 
 db = SQLite.DB(DATABASE_PATH)
-DBInterface.execute(db, "DROP TABLE IF EXISTS personas")
+# DBInterface.execute(db, "DROP TABLE IF EXISTS personas")
 DBInterface.execute(db, """
     CREATE TABLE IF NOT EXISTS personas (
           id     INTEGER PRIMARY KEY
@@ -136,14 +137,14 @@ DBInterface.execute(db, """
     )
 """)
 
-for (idx, persona) in enumerate(personas)
+for persona in personas
     DBInterface.execute(
         db,
         """
-            INSERT INTO personas (id, name, age, gender, job, traits)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO personas (name, age, gender, job, traits)
+            VALUES (?, ?, ?, ?, ?)
         """,
-        (idx, persona["name"], persona["age"], persona["gender"], persona["job"], persona["traits"]),
+        (persona["name"], persona["age"], persona["gender"], persona["job"], persona["traits"]),
     )
 end
 
