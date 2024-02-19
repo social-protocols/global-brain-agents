@@ -8,4 +8,4 @@ sqlite:
     sqlite3 $DATABASE_PATH
 
 shiny:
-    Rscript -e "shiny::runApp('app')"
+    Rscript -e "shiny::runApp('app', port = 3456)"
