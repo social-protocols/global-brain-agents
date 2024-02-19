@@ -1,5 +1,5 @@
 # --- PLAN:
-# --- - use global reply:vote ration as parameter to decide whether to reply or vote
+# --- - use global reply:vote ratio as parameter to decide whether to reply or vote
 # --- - create different personas for agents with chatgpt
 # --- - let gpt up or downvote
 # --- - let gpt reply
@@ -17,13 +17,14 @@ using SQLite
 
 SECRET_KEY = get(ENV, "OPENAI_API_KEY", "")
 LLM = "gpt-3.5-turbo"
-TOP_LEVEL_POST = "1 + 1 = 3"
+TOP_LEVEL_POST = "Using the metric system reduces the cognitive load of converting units."
 DATABASE_PATH = get(ENV, "DATABASE_PATH", "data/results.db")
 NCHARS_RESPONSE = 280
 
 # --- Define model
 
 @agent BrainAgent NoSpaceAgent begin
+    name::String
     persona::String
     vote_probability::Float64
     upvote_probability::Float64
@@ -46,27 +47,35 @@ end
 
 function get_response(
     agent::BrainAgent,
-    post_content::String,
+    messages::Vector{Dict{String, String}},
     secret_key::String = SECRET_KEY,
     model::String = LLM,
     nchars_response::Int = NCHARS_RESPONSE,
 )::String
-    prompt = """
-        You are a user of a social media platform with the following persona:
+    intro_message = Dict(
+        "role" => "user",
+        "name" => "Instructor",
+        "content" => """
+            Following is a discussion thread that you participate in as $(agent.name).
+        """
+    )
+    task_message = Dict(
+        "role" => "user",
+        "name" => "Instructor",
+        "content" => """
+            $(agent.name) has the following persona.
 
-        $(agent.persona)
+            $(agent.persona)
 
-        You are this user see the following thread:
+            Now imagine that you are $(agent.name).
+            In no more than $nchars_response characters, please respond as $(agent.name) to the preceding discussion thread. Please respond only with what $(agent.name) would say (in the first person, as if you were $(agent.name)).
+        """
 
-        $post_content
-
-        Please reply specifically to the last post in this list in less than $nchars_response characters.
-    """
-
+    )
     r = create_chat(
         secret_key,
         model,
-        [Dict("role" => "user", "content"=> prompt)]
+        [intro_message; messages; task_message],
     )
     return r.response[:choices][begin][:message][:content]
 end
@@ -84,23 +93,26 @@ function vote!(model::ABM, agent::BrainAgent, post::Post)::Tuple{ABM, BrainAgent
     return model, agent
 end
 
+# TODO: agents only reply to posts of other agents
 function reply!(
     model::ABM,
     agent::BrainAgent,
-    post::Post,
-    secret_key::String = SECRET_KEY,
+    post_id::Int,
 )::Tuple{ABM, BrainAgent}
-    parent_thread = get_parent_thread(post.id, model)
-    parent_thread_stringified = mapreduce(
-        *,
-        (a, b) -> a * "\n\n" * b,
-        [p.content for p in parent_thread];
-        init = ""
-    )
-    content = get_response(agent, parent_thread_stringified, secret_key)
+    parent_thread = get_parent_thread(post_id, model)
+    context_messages = Dict{String, String}[
+        Dict(
+            "role" => p.author_id == agent.id ? "system" : "user",
+            "name" => model[p.author_id].name,
+            "content" => p.content
+        )
+        for p in parent_thread
+    ]
+    # TODO: return as message, then unpack here
+    content = get_response(agent, context_messages)
     reply = Post(
         id = length(model.posts) + 1,
-        parent_id = post.id,
+        parent_id = post_id,
         content = content,
         author_id = agent.id,
         timestamp = model.step
@@ -123,7 +135,7 @@ function agent_step!(agent::BrainAgent, model::ABM)::Tuple{BrainAgent, ABM}
         vote!(model, agent, model.posts[rand(1:length(model.posts))])
     end
     if rand() < 0.8
-        reply!(model, agent, model.posts[rand(1:length(model.posts))])
+        reply!(model, agent, rand(1:length(model.posts)))
     end
     return agent, model
 end
@@ -156,7 +168,8 @@ model = ABM(BrainAgent; properties = properties)
 add_agent!(
     BrainAgent(
         1,
-        "Alice, 37, inquisitive, very confrontational, doesn't shy away from a conflict, smart",
+        "Alice",
+        "age 37, inquisitive, very confrontational, doesn't shy away from a conflict, smart",
         rand(2)...
     ),
     model
@@ -164,7 +177,8 @@ add_agent!(
 add_agent!(
     BrainAgent(
         2,
-        "Bob, 21, shy, introverted, likes to read, doesn't like to argue, smart, likes harmonic interactions",
+        "Bob",
+        "age 21, shy, introverted, likes to read, doesn't like to argue, smart, likes harmonic interactions",
         rand(2)...
     ),
     model
@@ -172,7 +186,8 @@ add_agent!(
 add_agent!(
     BrainAgent(
         3,
-        "Charlie, 41, violent tendencies, insults people on the Internet, very dumb",
+        "Charlie",
+        "age 41, violent tendencies, insults people on the Internet, very dumb",
         rand(2)...
     ),
     model
