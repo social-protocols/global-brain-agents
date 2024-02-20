@@ -3,6 +3,9 @@
 >[!NOTE]
 >This is an LLM agent simulation to test the efficacy of the [Global Brain](https://social-protocols.org/global-brain/) algorithm. This is still a work in progress.
 
+>[!Caution]
+>Please read the code before you add your OpenAI API key and execute anything. This model makes calls to the OpenAI API, so a cost is involved in running this model. It is currently very small, but you should verify how the module makes calls to the API anyways.
+
 ## Workflow
 
 To run the model, you have to provide an OpenAI API key.
