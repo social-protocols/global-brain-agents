@@ -28,7 +28,8 @@ end
 function vote!(
     abm::Agents.ABM,
     agent::BrainAgent,
-    post::Post
+    post::Post,
+    note::Union{Post, Nothing} = nothing,
 )::Tuple{Agents.ABM, BrainAgent}
     current_vote = findlast(
         v -> v.post_id == post.id && v.user_id == agent.id,
@@ -37,7 +38,7 @@ function vote!(
     if !isnothing(current_vote)
         return abm, agent
     end
-    vote = get_vote_from_gpt(abm, agent, post, nothing)
+    vote = get_vote_from_gpt(abm, agent, post, note)
     if vote == 0
         return abm, agent
     end

@@ -7,6 +7,7 @@ using JSON
 using SQLite
 using DataFrames
 using ProgressMeter
+using GlobalBrain
 
 include("model.jl")
 include("db.jl")
