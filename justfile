@@ -12,3 +12,6 @@ shiny:
 
 personas:
     julia --project scripts/personas.jl
+
+test:
+    julia --project scripts/test.jl

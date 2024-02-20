@@ -1,28 +1,9 @@
-function get_persona_creation_task_message(p_asshole::Float64)::Dict
-    task_message = if rand() < p_asshole
-        Dict(
-            "role" => "user",
-            "content" => "Please create a persona."
-        )
-    else
-        Dict(
-            "role" => "user",
-            "content" => "Please create a persona. Make sure he or she is a real asshole."
-        )
-    end
-    return task_message
-end
-
-
-function is_valid(persona::Dict)::Bool
-    return isempty(setdiff(keys(persona), Set(["name", "age", "gender", "job", "traits"])))
-end
-
+# --- The public interface ---
 
 function create_agents(
     n::Int,
     p_asshole::Float64,
-    persist::Bool,
+    db::Union{SQLite.DB, Nothing},
     secret_key::String,
     llm::String,
 )::Vector{BrainAgent}
@@ -53,11 +34,10 @@ function create_agents(
         ),
     ]
 
-    task_message = get_persona_creation_task_message(p_asshole)
-    personas = []
+    personas = Dict{String, Any}[]
 
     for _ in 1:n
-        messages = [context_messages; task_message]
+        messages = [context_messages; get_persona_creation_task_message(p_asshole)]
         persona, new_context_message = get_persona_from_gpt(messages, secret_key, llm)
         if !is_valid(persona)
             @warn "Invalid persona: $persona"
@@ -67,42 +47,48 @@ function create_agents(
         push!(context_messages, new_context_message)
     end
 
-    if persist
-        for (idx, persona) in enumerate(personas)
-            DBInterface.execute(
-                db,
-                """
-                    INSERT INTO personas (id, name, age, gender, job, traits)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    idx,
-                    persona["name"],
-                    persona["age"],
-                    persona["gender"],
-                    persona["job"],
-                    persona["traits"]
-                ),
-            )
-        end
-        @info "Persisted $(length(personas)) personas."
+    enumerated_personas = collect(enumerate(personas))
+
+    if !isnothing(db)
+        insert_personas(db, enumerated_personas)
     end
 
-    return map(create_agent_from_persona, personas)
+    return map(create_agent_from_persona, enumerated_personas)
+end
+
+function insert_personas(
+    db::SQLite.DB,
+    indexed_personas::Vector{Tuple{Int, Dict{String, Any}}}
+)::Nothing
+    for (idx, persona) in indexed_personas
+        DBInterface.execute(
+            db,
+            """
+                INSERT INTO personas (id, name, age, gender, job, traits)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                idx,
+                persona["name"],
+                persona["age"],
+                persona["gender"],
+                persona["job"],
+                persona["traits"]
+            ),
+        )
+    end
+    @info "Persisted $(length(indexed_personas)) personas."
 end
 
 
-function create_agent_from_persona(persona::Dict)::BrainAgent
-    return BrainAgent(
-        name = persona["name"],
-        age = persona["age"],
-        gender = persona["gender"],
-        job = persona["job"],
-        traits = persona["traits"],
-    )
-end
+# --- Private helper functions ---
 
-function get_persona_from_gpt(messages::Vector{Dict}, secret_key::String, llm::String)::Tuple{Dict, Dict}
+
+function get_persona_from_gpt(
+    messages::Vector{Dict{String, String}},
+    secret_key::String,
+    llm::String,
+)::Tuple{Dict, Dict}
     create_persona = Dict(
         "type" => "function",
         "function" => Dict(
@@ -164,3 +150,40 @@ function get_persona_from_gpt(messages::Vector{Dict}, secret_key::String, llm::S
     persona = JSON.parse(created_persona_json)
     return persona, new_context_message
 end
+
+
+function get_persona_creation_task_message(p_asshole::Float64)::Dict
+    task_message = if rand() < p_asshole
+        Dict(
+            "role" => "user",
+            "content" => "Please create a persona."
+        )
+    else
+        Dict(
+            "role" => "user",
+            "content" => "Please create a persona. Make sure he or she is a real asshole."
+        )
+    end
+    return task_message
+end
+
+
+function is_valid(persona::Dict)::Bool
+    return isempty(setdiff(keys(persona), Set(["name", "age", "gender", "job", "traits"])))
+end
+
+
+function create_agent_from_persona(
+    indexed_persona::Tuple{Int, Dict{String, Any}},
+)::BrainAgent
+    idx, persona = indexed_persona
+    return BrainAgent(
+        idx,
+        persona["name"],
+        persona["age"],
+        persona["gender"],
+        persona["job"],
+        persona["traits"],
+    )
+end
+
