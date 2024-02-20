@@ -37,6 +37,7 @@
             buildInputs = [
               just
               git
+              cloc
               julia-bin
               sqlite-interactive
               rEnv

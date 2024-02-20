@@ -15,3 +15,11 @@ personas:
 
 test:
     julia --project scripts/test.jl
+
+up-code-stats:
+    echo \`\`\` > notes/abm-stats.md
+    cloc src >> notes/abm-stats.md
+    echo \`\`\` >> notes/abm-stats.md
+    echo \`\`\` > notes/shiny-app-stats.md
+    cloc app >> notes/shiny-app-stats.md
+    echo \`\`\` >> notes/shiny-app-stats.md

@@ -1,6 +1,7 @@
 # Global Brain Algorithm Validation (WIP)
 
-*This is an LLM agent simulation to test the efficacy of the [Global Brain](https://social-protocols.org/global-brain/) algorithm. This is still a work in progress.*
+>[!NOTE]
+>This is an LLM agent simulation to test the efficacy of the [Global Brain](https://social-protocols.org/global-brain/) algorithm. This is still a work in progress.
 
 ## Workflow
 
@@ -23,4 +24,9 @@ just shiny
 ```
 
 This command starts a [shiny](https://shiny.posit.co/) app which runs on `localhost:3456`.
+
+## Code Overview
+
+- [ABM lines of code](notes/abm-stats.md)
+- [shiny app lines of code](notes/shiny-app-stats.md)
 
