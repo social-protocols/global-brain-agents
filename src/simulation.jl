@@ -20,8 +20,8 @@ function create_agent_based_model(top_level_post::String, secret_key::String, ll
 end
 
 
-function populate!(abm::Agents.ABM, n_agents::Int, p_asshole::Float64, db::SQLite.DB)::Agents.ABM
-    agents = create_agents(n_agents, p_asshole, db, abm.secret_key, abm.llm)
+function populate!(abm::Agents.ABM, n_agents::Int, db::SQLite.DB)::Agents.ABM
+    agents = get_agents(n_agents, db)
     for a in agents
         add_agent!(a, abm)
     end
