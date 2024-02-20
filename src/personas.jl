@@ -35,7 +35,7 @@ function create_personas(
 
     @info "Generating personas..."
 
-    @showprogress for _ in 1:n
+    ProgressMeter.@showprogress for _ in 1:n
         task_message = if rand() < p_asshole
             Dict(
                 "role" => "user",

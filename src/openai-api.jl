@@ -1,3 +1,4 @@
+# TODO: Confusing that this returns a tuple -> find better structure for API
 function get_persona_from_gpt(
     messages::Vector{Dict{String, String}},
     secret_key::String,
@@ -40,17 +41,16 @@ function get_persona_from_gpt(
     )
 
     r = OpenAI.create_chat(
-        secret_key,
-        llm,
-        messages;
+        secret_key, llm, messages;
         tools = [create_persona],
         tool_choice = Dict(
             "type" => "function",
             "function" => Dict("name" => "create_persona"),
         ),
     )
-    tool_call = r.response[:choices][begin][:message][:tool_calls][begin]
-    created_persona_json = tool_call[:function][:arguments]
+
+    created_persona_json =
+        r.response[:choices][begin][:message][:tool_calls][begin][:function][:arguments]
     new_context_message = Dict(
         "role" => "system",
         "content" => """
@@ -65,7 +65,7 @@ end
 
 
 function get_response_from_gpt(
-    abm::ABM,
+    abm::Agents.ABM,
     agent::BrainAgent,
     messages::Vector{Dict{String, String}},
     nchars_response::Int,
@@ -92,9 +92,8 @@ function get_response_from_gpt(
             In no more than $nchars_response characters, please respond as $(agent.name) to the preceding discussion thread. Please respond only with what $(agent.name) would say (in the first person, as if you were $(agent.name)). If you spoke before in the thread, please don't repeat yourself and continue the conversation.
         """
     )
-    r = create_chat(
-        abm.secret_key,
-        abm.llm,
+    r = OpenAI.create_chat(
+        abm.secret_key, abm.llm,
         [intro_message; messages; task_message],
     )
     # TODO: more sophisticated response extraction
@@ -103,7 +102,7 @@ end
 
 
 function get_vote_from_gpt(
-    abm::ABM,
+    abm::Agents.ABM,
     agent::BrainAgent,
     post::Post,
     note::Union{Post, Nothing},
@@ -158,10 +157,8 @@ function get_vote_from_gpt(
     )
     push!(messages, tool_message)
 
-    r = create_chat(
-        abm.secret_key,
-        abm.llm,
-        messages;
+    r = OpenAI.create_chat(
+        abm.secret_key, abm.llm, messages;
         tools = [vote_function],
         tool_choice = Dict(
             "type" => "function",

@@ -1,5 +1,9 @@
-function create_agent_based_model(top_level_post::String, secret_key::String, llm::String)::Agents.ABM
-    return ABM(
+function create_agent_based_model(
+    top_level_post::String,
+    secret_key::String,
+    llm::String
+)::Agents.ABM
+    return Agents.ABM(
         BrainAgent;
         properties = Dict(
             :secret_key => secret_key,
@@ -23,7 +27,7 @@ end
 function populate!(abm::Agents.ABM, n_agents::Int, db::SQLite.DB)::Agents.ABM
     agents = get_agents(n_agents, db)
     for a in agents
-        add_agent!(a, abm)
+        Agents.add_agent!(a, abm)
     end
     return abm
 end
@@ -36,7 +40,10 @@ function run_simulation!(
     showprogress::Bool = true
 )::Agents.ABM
     @info "Running model..."
-    run!(abm, agent_step!, model_step!, n_steps; showprogress = showprogress, agents_first = false)
+    Agents.run!(
+        abm, agent_step!, model_step!, n_steps;
+        showprogress = showprogress, agents_first = false
+    )
     @info "Model run successful!"
 
     @info "Saving data to database..."
@@ -75,7 +82,3 @@ function run_simulation!(
 
     return abm
 end
-
-
-
-

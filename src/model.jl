@@ -1,4 +1,4 @@
-Base.@kwdef mutable struct BrainAgent <: AbstractAgent
+Base.@kwdef mutable struct BrainAgent <: Agents.AbstractAgent
     id::Int
     name::String
     age::Int
@@ -10,7 +10,7 @@ end
 
 Base.@kwdef struct Post
     id::Int
-    parent_id::Union{Int, Nothing}
+    parent_id::Union{Int, Nothing} # if nothing -> top-level post
     content::String
     author_id::Int
     timestamp::Int # model step
@@ -25,7 +25,11 @@ Base.@kwdef struct Vote
 end
 
 
-function vote!(abm::ABM, agent::BrainAgent, post::Post)::Tuple{ABM, BrainAgent}
+function vote!(
+    abm::Agents.ABM,
+    agent::BrainAgent,
+    post::Post
+)::Tuple{Agents.ABM, BrainAgent}
     current_vote = findlast(
         v -> v.post_id == post.id && v.user_id == agent.id,
         abm.votes
@@ -49,10 +53,10 @@ end
 
 
 function reply!(
-    abm::ABM,
+    abm::Agents.ABM,
     agent::BrainAgent,
     post_id::Int,
-)::Tuple{ABM, BrainAgent}
+)::Tuple{Agents.ABM, BrainAgent}
     parent_thread = get_parent_thread(abm, post_id)
     context_messages = Dict{String, String}[
         Dict(
@@ -75,7 +79,7 @@ function reply!(
 end
 
 
-function get_parent_thread(abm::ABM, post_id::Int)::Vector{Post}
+function get_parent_thread(abm::Agents.ABM, post_id::Int)::Vector{Post}
     post = abm.posts[post_id]
     if isnothing(post.parent_id)
         return [post]
@@ -85,7 +89,7 @@ function get_parent_thread(abm::ABM, post_id::Int)::Vector{Post}
 end
 
 
-function agent_step!(agent::BrainAgent, abm::ABM)::Tuple{BrainAgent, ABM}
+function agent_step!(agent::BrainAgent, abm::Agents.ABM)::Tuple{BrainAgent, Agents.ABM}
     other_agents_posts = abm.posts[abm.posts.author_id .!= agent.id]
     if isempty(other_agents_posts)
         return agent, abm
@@ -99,7 +103,7 @@ function agent_step!(agent::BrainAgent, abm::ABM)::Tuple{BrainAgent, ABM}
 end
 
 
-function model_step!(abm::ABM)::ABM
+function model_step!(abm::Agents.ABM)::Agents.ABM
     abm.step += 1
     return abm
 end
