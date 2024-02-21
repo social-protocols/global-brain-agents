@@ -49,10 +49,24 @@ function create_personas(
         end
         messages = [context_messages; task_message]
         persona, new_context_message = get_persona_from_gpt(messages, secret_key, llm)
+        if !is_valid_persona(persona)
+            @warn "Invalid persona: $persona"
+            continue
+        end
         push!(personas, persona)
         push!(context_messages, new_context_message)
     end
 
-    @info "Created $(n) personas."
+    @info "Created $(length(personas)) personas."
     return personas
 end
+
+function is_valid_persona(persona::Dict{String, Any})::Bool
+    required_keys = ["name", "age", "gender", "job", "traits"]
+    actual_keys = collect(keys(persona))
+    return (
+        isempty(setdiff(required_keys, actual_keys)) &&
+        isempty(setdiff(required_keys, actual_keys))
+    )
+end
+

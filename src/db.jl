@@ -15,6 +15,7 @@ function create_db(path::String)::SQLite.DB
             , user_id   INTEGER NOT NULL
             , upvote    BOOLEAN NOT NULL
             , timestamp INTEGER NOT NULL
+            , PRIMARY KEY (post_id, user_id)
         )
     """)
     DBInterface.execute(db, """
@@ -82,7 +83,7 @@ function get_agents(n::Int, db::SQLite.DB)::Vector{BrainAgent}
         for persona in personas
     ]
     if length(agents) < n
-        @warn "Only found $(length(personas)) personas in the database."
+        @warn "Only found $(length(agents)) personas in the database."
     end
     return agents
 end

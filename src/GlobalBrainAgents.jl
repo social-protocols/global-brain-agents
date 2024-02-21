@@ -12,6 +12,7 @@ using GlobalBrain
 include("model.jl")
 include("db.jl")
 include("openai-api.jl")
+include("global-brain-api.jl")
 include("personas.jl")
 include("simulation.jl")
 
@@ -19,6 +20,9 @@ export create_db
 export get_db
 export create_personas
 export insert_personas!
+export construct_inmemory_tree
+export to_tallies_tree_iterable
+export get_detailed_tally
 export create_agent_based_model
 export populate!
 export run_simulation!

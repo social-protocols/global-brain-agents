@@ -38,7 +38,8 @@ function vote!(
     if !isnothing(current_vote)
         return abm, agent
     end
-    vote = get_vote_from_gpt(abm, agent, post, note)
+    # vote = get_vote_from_gpt(abm, agent, post, note)
+    vote = Random.rand(-1:1) # -----> LOCAL TESTING
     if vote == 0
         return abm, agent
     end
@@ -67,7 +68,8 @@ function reply!(
         )
         for p in parent_thread
     ]
-    content = get_response_from_gpt(abm, agent, context_messages, 280)
+    # content = get_response_from_gpt(abm, agent, context_messages, 280)
+    content = Random.randstring(20) # ---> LOCAL TESTING
     reply = Post(
         id = length(abm.posts) + 1,
         parent_id = post_id,
@@ -91,7 +93,7 @@ end
 
 
 function agent_step!(agent::BrainAgent, abm::Agents.ABM)::Tuple{BrainAgent, Agents.ABM}
-    other_agents_posts = abm.posts[abm.posts.author_id .!= agent.id]
+    other_agents_posts = filter(p -> p.author_id != agent.id, abm.posts)
     if isempty(other_agents_posts)
         return agent, abm
     end
