@@ -25,11 +25,17 @@ Base.@kwdef struct Vote
 end
 
 
+struct PostDetailsView
+    post::Post
+    thread::Vector{Post}
+    scored_replies::Vector{Tuple{Post, ScoreData}}
+end
+
+
 function vote!(
     abm::Agents.ABM,
     agent::BrainAgent,
     post::Post,
-    note::Union{Post, Nothing} = nothing,
 )::Tuple{Agents.ABM, BrainAgent}
     current_vote = findlast(
         v -> v.post_id == post.id && v.user_id == agent.id,
@@ -68,7 +74,7 @@ function reply!(
         )
         for p in parent_thread
     ]
-    # content = get_response_from_gpt(abm, agent, context_messages, 280)
+    # content = get_reply_from_gpt(abm, agent, context_messages, 280)
     content = Random.randstring(20) # ---> LOCAL TESTING
     reply = Post(
         id = length(abm.posts) + 1,
@@ -93,13 +99,15 @@ end
 
 
 function agent_step!(agent::BrainAgent, abm::Agents.ABM)::Tuple{BrainAgent, Agents.ABM}
+    # TODO: only score posts which are affected by the new vote or reply
+    score_posts!(abm, 1)
     other_agents_posts = filter(p -> p.author_id != agent.id, abm.posts)
     if isempty(other_agents_posts)
         return agent, abm
     end
-    selected_post = other_agents_posts[rand(1:length(other_agents_posts))]
+    selected_post = other_agents_posts[Random.rand(1:length(other_agents_posts))]
     vote!(abm, agent, selected_post)
-    if rand() < 0.8 # hard-coded reply probability, TODO: more sophisticated
+    if Random.rand() < 0.8 # hard-coded reply probability, TODO: more sophisticated
         reply!(abm, agent, selected_post.id)
     end
     return agent, abm

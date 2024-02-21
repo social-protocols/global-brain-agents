@@ -1,3 +1,10 @@
+function score_posts!(abm::Agents.ABM, root_post_id::Int)::Agents.ABM
+    in_memory_tree = construct_inmemory_tree(abm, root_post_id)
+    tallies_tree_iterable = to_tallies_tree_iterable(in_memory_tree)
+    abm.scores = GlobalBrain.score_tree(tallies_tree_iterable)
+    return abm
+end
+
 function construct_inmemory_tree(abm::Agents.ABM, root_post_id::Int)::GlobalBrain.InMemoryTree
     children_posts = filter(p -> p.parent_id == root_post_id, abm.posts)
     detailed_tally = get_detailed_tally(abm, root_post_id)

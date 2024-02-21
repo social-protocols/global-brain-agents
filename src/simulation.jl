@@ -1,3 +1,7 @@
+function initialize_simulation()
+    # TODO
+end
+
 function create_agent_based_model(
     top_level_post::String,
     secret_key::String,
@@ -18,6 +22,7 @@ function create_agent_based_model(
                 )
             ],
             :votes => Vote[Vote(1, 1, true, 0)], # OP upvote
+            :scores => GlobalBrain.ScoreData[],
             :step => 0,
         ),
     )
@@ -37,7 +42,7 @@ function run_simulation!(
     abm::Agents.ABM,
     n_steps::Int,
     db::SQLite.DB;
-    showprogress::Bool = true
+    showprogress::Bool = true,
 )::Agents.ABM
     @info "Running model..."
     Agents.run!(

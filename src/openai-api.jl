@@ -63,7 +63,7 @@ function get_persona_from_gpt(
     return persona, new_context_message
 end
 
-function get_response_from_gpt(
+function get_reply_from_gpt(
     abm::Agents.ABM,
     agent::BrainAgent,
     messages::Vector{Dict{String, String}},
