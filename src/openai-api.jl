@@ -104,8 +104,8 @@ function get_vote_from_gpt(
     abm::Agents.ABM,
     agent::BrainAgent,
     post::Post,
-    note::Union{Post, Nothing},
-)::Int
+    note::Union{Post, Nothing} = nothing,
+)::Any # TODO: return type
     vote_function = Dict(
         "type" => "function",
         "function" => Dict(
@@ -114,6 +114,10 @@ function get_vote_from_gpt(
             "parameters" => Dict(
                 "type" => "object",
                 "properties" => Dict(
+                    "explanation" => Dict(
+                        "type" => "string",
+                        "description" => "Explanation why the decision was taken to vote on a certain way and if the context influenced you in that decision",
+                    ),
                     "vote" => Dict(
                         "type" => "number",
                         "enum" => [-1, 0, 1],
@@ -121,15 +125,111 @@ function get_vote_from_gpt(
                     ),
                 ),
             ),
-            "required" => ["vote"]
+            "required" => ["explanation", "vote"]
         )
     )
-
     messages = Dict{String, String}[]
+
+    intro_message = Dict(
+        "role" => "system",
+        "name" => "Instructor",
+        "content" => """
+            You are using a social media platform, like Twitter.
+            You read the following discussion thread.
+        """
+    )
+    push!(messages, intro_message)
+
+    parent_thread = get_parent_thread(abm, post.id)
+    for parent_post in parent_thread
+        parent_post_message = Dict(
+            "role" => "user",
+            "name" => abm[parent_post.author_id].name,
+            "content" => parent_post.content
+        )
+        push!(messages, parent_post_message)
+    end
+
+
     post_message = Dict(
         "role" => "user",
         "name" => abm[post.author_id].name,
         "content" => post.content
+    )
+    push!(messages, post_message)
+
+    note_task_primer_content = if !isnothing(note)
+        """
+            You will also view a reply to that post, for extra context. When you vote, you take into account the extra context from the reply. 
+            Make your decision about the post itself, the reply is simply for extra context. 
+            Do not vote on the reply.
+        """
+    else
+        ""
+    end
+
+    reply_example_1, reply_example_2 = if !isnothing(note)
+        (
+            """```reply```:  The horizon appears flat to the naked eye, and if the Earth were truly a sphere, we would be able to detect the curvature.""",
+            """```reply```: That's false because you can circumnavigate the globe""",
+        )
+    else
+        ("", "")
+    end
+
+    note_examples = if !isnothing(note)
+        """
+            Example 1:
+               ```post```: The earth is flat  
+                $reply_example_1
+                ```action to the post```: Upvote the post
+            Example 2
+                ```post```: The earth is flat
+                $reply_example_2
+                ```action to the post```: Downvote the post
+        """
+    else
+        ""
+    end
+
+    task_message = if !isnothing(note)
+        """
+            Following is the post and a reply to that post. Please vote on the post providing your reasoning behind it.
+        """
+    else
+        ""
+    end
+
+    persona_task_primer = Dict(
+        "role" => "system",
+        "name" => "Instructor",
+        "content" => """
+            You are the following persona:
+
+            ```
+            name: $(agent.name)
+            age: $(agent.age)
+            gender: $(agent.gender)
+            job: $(agent.job)
+            traits: $(agent.traits)
+            ```
+
+            You engage with things that interest you, raise your opinions and vote on things you like.
+            You are going to view a post and upvote, downvote or ignore it.
+
+            $note_task_primer_content
+
+            $note_examples
+
+            $task_message
+        """
+    )
+    push!(messages, persona_task_primer)
+
+    post_message = Dict(
+        "role" => "user",
+        "name" => abm[post.author_id].name,
+        "content" => post.content,
     )
     push!(messages, post_message)
 
@@ -142,20 +242,6 @@ function get_vote_from_gpt(
         push!(messages, note_message)
     end
 
-    tool_message = Dict(
-        "role" => "system",
-        "name" => "Instructor",
-        "content" => """
-            Imagine you are $(agent.name), a user of a social media platform.
-            You have the following persona:
-
-            $(agent.traits)
-
-            As $(agent.name), please provide a vote based on your opinion on the content of the first message from this thread.
-        """
-    )
-    push!(messages, tool_message)
-
     r = OpenAI.create_chat(
         abm.secret_key, abm.llm, messages;
         tools = [vote_function],
@@ -166,9 +252,9 @@ function get_vote_from_gpt(
             ),
         ),
     )
-    vote_json = r.response[:choices][begin][:message][:tool_calls][begin][:function][:arguments]
-    vote_dict = JSON.parse(vote_json)
-    vote = vote_dict["vote"]
+    # vote_json = r.response[:choices][begin][:message][:tool_calls][begin][:function][:arguments]
+    # vote_dict = JSON.parse(vote_json)
+    # vote = vote_dict["vote"]
 
-    return vote
+    return r
 end

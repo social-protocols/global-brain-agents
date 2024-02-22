@@ -73,12 +73,13 @@ function get_agents(n::Int, db::SQLite.DB)::Vector{BrainAgent}
     personas = DBInterface.execute(db, query)
     agents =  [
         BrainAgent(
-            persona[:id],
-            persona[:name],
-            persona[:age],
-            persona[:gender],
-            persona[:job],
-            persona[:traits],
+            id = persona[:id],
+            name = persona[:name],
+            age = persona[:age],
+            gender = persona[:gender],
+            job = persona[:job],
+            traits = persona[:traits],
+            memory = nothing,
         )
         for persona in personas
     ]

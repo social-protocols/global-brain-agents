@@ -9,6 +9,7 @@ using DataFrames
 using ProgressMeter
 using GlobalBrain
 
+include("discussion-tree.jl")
 include("model.jl")
 include("db.jl")
 include("openai-api.jl")
@@ -26,5 +27,10 @@ export get_detailed_tally
 export create_agent_based_model
 export populate!
 export run_simulation!
+
+export get_vote_from_gpt
+
+export Post
+export Vote
 
 end

@@ -2,42 +2,6 @@ function initialize_simulation()
     # TODO
 end
 
-function create_agent_based_model(
-    top_level_post::String,
-    secret_key::String,
-    llm::String
-)::Agents.ABM
-    return Agents.ABM(
-        BrainAgent;
-        properties = Dict(
-            :secret_key => secret_key,
-            :llm => llm,
-            :posts => Post[
-                Post(
-                    id = 1,
-                    parent_id = nothing,
-                    content = top_level_post,
-                    author_id = 1,
-                    timestamp = 0,
-                )
-            ],
-            :votes => Vote[Vote(1, 1, true, 0)], # OP upvote
-            :scores => GlobalBrain.ScoreData[],
-            :step => 0,
-        ),
-    )
-end
-
-
-function populate!(abm::Agents.ABM, n_agents::Int, db::SQLite.DB)::Agents.ABM
-    agents = get_agents(n_agents, db)
-    for a in agents
-        Agents.add_agent!(a, abm)
-    end
-    return abm
-end
-
-
 function run_simulation!(
     abm::Agents.ABM,
     n_steps::Int,
@@ -51,6 +15,7 @@ function run_simulation!(
     )
     @info "Model run successful!"
 
+    # TODO: move this to database layer, i.e., hide in a function
     @info "Saving data to database..."
     DBInterface.execute(db, "DROP TABLE IF EXISTS posts")
     DBInterface.execute(db, "DROP TABLE IF EXISTS votes")
