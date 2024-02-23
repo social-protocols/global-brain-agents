@@ -251,6 +251,7 @@ function get_vote_from_gpt(
                 "name" => "vote",
             ),
         ),
+        # logprobs = true,
     )
     # vote_json = r.response[:choices][begin][:message][:tool_calls][begin][:function][:arguments]
     # vote_dict = JSON.parse(vote_json)

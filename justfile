@@ -14,12 +14,14 @@ personas:
     julia --project scripts/personas.jl
 
 test:
-    julia --project scripts/test.jl
+    julia --project scripts/voting-tests.jl
 
 up-code-stats:
-    echo \`\`\` > notes/abm-stats.md
+    date > notes/abm-stats.md
+    echo \`\`\` >> notes/abm-stats.md
     cloc src >> notes/abm-stats.md
     echo \`\`\` >> notes/abm-stats.md
-    echo \`\`\` > notes/shiny-app-stats.md
+    date > notes/shiny-app-stats.md
+    echo \`\`\` >> notes/shiny-app-stats.md
     cloc app >> notes/shiny-app-stats.md
     echo \`\`\` >> notes/shiny-app-stats.md
