@@ -65,7 +65,7 @@ end
 
 function get_reply_from_gpt(
     abm::Agents.ABM,
-    agent::BrainAgent,
+    agent::GPTAgent,
     messages::Vector{Dict{String, String}},
     nchars_response::Int,
 )::String
@@ -102,7 +102,7 @@ end
 
 function get_vote_from_gpt(
     abm::Agents.ABM,
-    agent::BrainAgent,
+    agent::GPTAgent,
     post::Post,
     note::Union{Post, Nothing} = nothing,
 )::Any # TODO: return type

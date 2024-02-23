@@ -63,7 +63,7 @@ function insert_personas!(db::SQLite.DB, personas::Vector{Dict{String, Any}},)::
 end
 
 
-function get_agents(n::Int, db::SQLite.DB)::Vector{BrainAgent}
+function get_agents(n::Int, db::SQLite.DB)::Vector{GPTAgent}
     query = """
         SELECT *
         FROM personas
@@ -72,7 +72,7 @@ function get_agents(n::Int, db::SQLite.DB)::Vector{BrainAgent}
     """
     personas = DBInterface.execute(db, query)
     agents =  [
-        BrainAgent(
+        GPTAgent(
             id = persona[:id],
             name = persona[:name],
             age = persona[:age],

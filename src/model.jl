@@ -1,4 +1,4 @@
-Base.@kwdef mutable struct BrainAgent <: Agents.AbstractAgent
+Base.@kwdef mutable struct GPTAgent <: Agents.AbstractAgent
     id::Int
     name::String
     age::Int
@@ -35,10 +35,10 @@ end
 
 function vote!(
     abm::Agents.ABM,
-    agent::BrainAgent,
+    agent::GPTAgent,
     post::Post;
     local_testing::Bool = false,
-)::Tuple{Agents.ABM, BrainAgent}
+)::Tuple{Agents.ABM, GPTAgent}
     current_vote = findlast(
         v -> v.post_id == post.id && v.user_id == agent.id,
         abm.votes
@@ -69,10 +69,10 @@ end
 
 function reply!(
     abm::Agents.ABM,
-    agent::BrainAgent,
+    agent::GPTAgent,
     post_id::Int;
     local_testing::Bool = false,
-)::Tuple{Agents.ABM, BrainAgent}
+)::Tuple{Agents.ABM, GPTAgent}
     parent_thread = get_parent_thread(abm, post_id)
     context_messages = Dict{String, String}[
         Dict(
@@ -112,7 +112,7 @@ function get_parent_thread(abm::Agents.ABM, post_id::Int)::Vector{Post}
 end
 
 
-function agent_step!(agent::BrainAgent, abm::Agents.ABM)::Tuple{BrainAgent, Agents.ABM}
+function agent_step!(agent::GPTAgent, abm::Agents.ABM)::Tuple{GPTAgent, Agents.ABM}
     score_posts!(abm, abm.discussion_tree.root)
 
     # Initialization case: agent has no memory and hasn't taken part in the discussion yet
@@ -143,7 +143,7 @@ function agent_step!(agent::BrainAgent, abm::Agents.ABM)::Tuple{BrainAgent, Agen
     return agent, abm
 end
 
-function choose_post_to_interact_with(agent::BrainAgent, abm::Agents.ABM)::Post
+function choose_post_to_interact_with(agent::GPTAgent, abm::Agents.ABM)::Post
     leaf_nodes = get_leaves(abm.discussion_tree)
     candidates = [n for n in leaf_nodes if abm.posts[n].author_id != agent.id]
     choice = Random.rand(candidates)
@@ -173,7 +173,7 @@ function create_agent_based_model(
     )
     original_poster_upvote = Vote(root_post_id, root_post_author_id, true, 0)
     return Agents.ABM(
-        BrainAgent;
+        GPTAgent;
         properties = Dict(
             :secret_key => secret_key,
             :llm => llm,
