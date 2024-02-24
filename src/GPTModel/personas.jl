@@ -70,3 +70,52 @@ function is_valid_persona(persona::Dict{String, Any})::Bool
     )
 end
 
+
+function insert_personas!(db::SQLite.DB, personas::Vector{Dict{String, Any}},)::Nothing
+    query = """
+        INSERT INTO personas (name, age, gender, job, traits)
+        VALUES (?, ?, ?, ?, ?)
+    """
+    for persona in personas
+        DBInterface.execute(
+            db,
+            query,
+            (
+                persona["name"],
+                persona["age"],
+                persona["gender"],
+                persona["job"],
+                persona["traits"]
+            ),
+        )
+    end
+    @info "Persisted $(length(personas)) personas."
+end
+
+
+function get_gpt_agents(n::Int, db::SQLite.DB)::Vector{GPTAgent}
+    query = """
+        SELECT *
+        FROM personas
+        ORDER BY RANDOM()
+        LIMIT $n
+    """
+    personas = DBInterface.execute(db, query)
+    agents =  [
+        GPTAgent(
+            id = persona[:id],
+            name = persona[:name],
+            age = persona[:age],
+            gender = persona[:gender],
+            job = persona[:job],
+            traits = persona[:traits],
+            memory = nothing,
+        )
+        for persona in personas
+    ]
+    if length(agents) < n
+        @warn "Only found $(length(agents)) personas in the database."
+    end
+    return agents
+end
+

@@ -47,14 +47,14 @@ db = get_db(DATABASE_PATH)
 abm = create_agent_based_model(TOP_LEVEL_POST, OPENAI_API_KEY, LLM)
 populate!(abm, 3, db)
 
-post = Post(
+post = GlobalBrainAgents.Post(
     id = 2,
     parent_id = 1,
     content = "wait thats footage from an earthquake from 3 years ago in Indonesia",
     author_id = 1,
     timestamp = 1,
 )
-note = Post(
+note = GlobalBrainAgents.Post(
     id = 3,
     parent_id = 2,
     content = "actually, it's from Mexico, and it's from last week. I'm a journalist and I was there. I can provide more information if you want.",
@@ -65,8 +65,11 @@ push!(abm.posts, post)
 push!(abm.posts, note)
 
 
-vote_without_note = get_vote_from_gpt(abm, abm[3], abm.posts[2])
-vote_with_note = get_vote_from_gpt(abm, abm[3], abm.posts[2], abm.posts[3])
+vote_without_note_raw = get_vote_from_gpt(abm, abm[3], abm.posts[2])
+vote_with_note_raw = get_vote_from_gpt(abm, abm[3], abm.posts[2], abm.posts[3])
+
+vote_without_note = JSON.parse(vote_without_note_raw.response[:choices][begin][:message][:tool_calls][begin][:function][:arguments])
+vote_with_note = JSON.parse(vote_with_note_raw.response[:choices][begin][:message][:tool_calls][begin][:function][:arguments])
 
 println(vote_without_note)
 println(vote_with_note)

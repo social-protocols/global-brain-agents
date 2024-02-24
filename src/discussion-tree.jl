@@ -26,6 +26,7 @@ function add_node!(tree::DiscussionTree, parent_id::Int, post_id::Int)::Discussi
     return tree
 end
 
+
 function get_leaves(tree::DiscussionTree)::Vector{Int}
     return filter((n) -> isempty(descendents(tree, n)), nodes(tree))
 end

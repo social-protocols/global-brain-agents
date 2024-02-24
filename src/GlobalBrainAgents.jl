@@ -9,28 +9,49 @@ using DataFrames
 using ProgressMeter
 using GlobalBrain
 
-include("discussion-tree.jl")
-include("model.jl")
-include("db.jl")
-include("openai-api.jl")
-include("global-brain-api.jl")
-include("personas.jl")
-include("simulation.jl")
 
-export create_db
-export get_db
+export Post
+export Vote
+
+export DiscussionTree
+export nodes
+export descendents
+export add_node!
+export get_leaves
+
+include("types.jl")
+include("discussion-tree.jl")
+include("db.jl")
+include("global-brain-api.jl")
+include(joinpath("GPTModel", "GPTModel.jl"))
+
+
+using .GPTModel
+
+export GPTAgent
+
+export vote!
+export reply!
+
+export agent_step!
+export model_step!
+
 export create_personas
 export insert_personas!
-export construct_inmemory_tree
-export to_tallies_tree_iterable
-export get_detailed_tally
+
 export create_agent_based_model
 export populate!
 export run_simulation!
 
 export get_vote_from_gpt
+export get_reply_from_gpt
+export get_persona_from_gpt
 
-export Post
-export Vote
+
+export create_db
+export get_db
+export construct_inmemory_tree
+export to_tallies_tree_iterable
+export get_detailed_tally
 
 end

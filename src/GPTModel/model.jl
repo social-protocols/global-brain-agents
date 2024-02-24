@@ -9,34 +9,10 @@ Base.@kwdef mutable struct GPTAgent <: Agents.AbstractAgent
 end
 
 
-Base.@kwdef struct Post
-    id::Int
-    parent_id::Union{Int, Nothing}
-    content::String
-    author_id::Int
-    timestamp::Int # model step
-end
-
-
-Base.@kwdef struct Vote
-    post_id::Int
-    user_id::Int
-    upvote::Bool
-    timestamp::Int # model step
-end
-
-
-struct PostDetailsView
-    post::Post
-    thread::Vector{Post}
-    scored_replies::Vector{Tuple{Post, GlobalBrain.ScoreData}}
-end
-
-
 function vote!(
     abm::Agents.ABM,
     agent::GPTAgent,
-    post::Post;
+    post::GlobalBrainAgents.Post;
     local_testing::Bool = false,
 )::Tuple{Agents.ABM, GPTAgent}
     current_vote = findlast(
@@ -56,7 +32,7 @@ function vote!(
     if vote == 0
         return abm, agent
     end
-    vote = Vote(
+    vote = GlobalBrainAgents.Vote(
         post_id = post.id,
         user_id = agent.id,
         upvote = vote == 1 ? true : false,
@@ -89,7 +65,7 @@ function reply!(
     end
 
     new_post_id = length(abm.posts) + 1
-    reply = Post(
+    reply = GlobalBrainAgents.Post(
         id = new_post_id,
         parent_id = post_id,
         content = content,
@@ -102,7 +78,7 @@ function reply!(
 end
 
 
-function get_parent_thread(abm::Agents.ABM, post_id::Int)::Vector{Post}
+function get_parent_thread(abm::Agents.ABM, post_id::Int)::Vector{GlobalBrainAgents.Post}
     post = abm.posts[post_id]
     return if isnothing(post.parent_id)
         [post]
@@ -143,7 +119,7 @@ function agent_step!(agent::GPTAgent, abm::Agents.ABM)::Tuple{GPTAgent, Agents.A
     return agent, abm
 end
 
-function choose_post_to_interact_with(agent::GPTAgent, abm::Agents.ABM)::Post
+function choose_post_to_interact_with(agent::GPTAgent, abm::Agents.ABM)::GlobalBrainAgents.Post
     leaf_nodes = get_leaves(abm.discussion_tree)
     candidates = [n for n in leaf_nodes if abm.posts[n].author_id != agent.id]
     choice = Random.rand(candidates)
@@ -164,21 +140,21 @@ function create_agent_based_model(
 )::Agents.ABM
     root_post_id = 1
     root_post_author_id = 1
-    root_post = Post(
+    root_post = GlobalBrainAgents.Post(
         id = root_post_id,
         parent_id = nothing,
         content = top_level_post,
         author_id = root_post_author_id,
         timestamp = 0,
     )
-    original_poster_upvote = Vote(root_post_id, root_post_author_id, true, 0)
+    original_poster_upvote = GlobalBrainAgents.Vote(root_post_id, root_post_author_id, true, 0)
     return Agents.ABM(
         GPTAgent;
         properties = Dict(
             :secret_key => secret_key,
             :llm => llm,
-            :posts => Post[root_post],
-            :votes => Vote[original_poster_upvote],
+            :posts => GlobalBrainAgents.Post[root_post],
+            :votes => GlobalBrainAgents.Vote[original_poster_upvote],
             :scores => GlobalBrain.ScoreData[],
             :discussion_tree => DiscussionTree(root_post_id, []),
             :step => 0,
@@ -188,7 +164,7 @@ end
 
 
 function populate!(abm::Agents.ABM, n_agents::Int, db::SQLite.DB)::Agents.ABM
-    agents = get_agents(n_agents, db)
+    agents = get_gpt_agents(n_agents, db)
     for a in agents
         Agents.add_agent!(a, abm)
     end
