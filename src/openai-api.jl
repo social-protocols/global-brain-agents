@@ -103,8 +103,8 @@ end
 function get_vote_from_gpt(
     abm::Agents.ABM,
     agent::GPTAgent,
-    post::GlobalBrainAgents.Post,
-    note::Union{GlobalBrainAgents.Post, Nothing} = nothing,
+    post::GPTPost,
+    note::Union{GPTPost, Nothing} = nothing,
 )::Any # TODO: return type
     vote_function = Dict(
         "type" => "function",

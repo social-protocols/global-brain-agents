@@ -1,4 +1,6 @@
-Base.@kwdef struct Post
+abstract type AbstractPost end
+
+Base.@kwdef struct GPTPost <: AbstractPost
     id::Int
     parent_id::Union{Int, Nothing}
     content::String
@@ -16,8 +18,8 @@ end
 
 
 struct PostDetailsView
-    post::GlobalBrainAgents.Post
-    thread::Vector{GlobalBrainAgents.Post}
-    scored_replies::Vector{Tuple{GlobalBrainAgents.Post, GlobalBrain.ScoreData}}
+    post::AbstractPost
+    thread::Vector{AbstractPost}
+    scored_replies::Vector{Tuple{AbstractPost, GlobalBrain.ScoreData}}
 end
 

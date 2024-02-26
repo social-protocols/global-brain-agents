@@ -47,14 +47,14 @@ db = get_db(DATABASE_PATH)
 abm = create_agent_based_model(TOP_LEVEL_POST, OPENAI_API_KEY, LLM)
 populate!(abm, 3, db)
 
-post = GlobalBrainAgents.Post(
+post = GPTPost(
     id = 2,
     parent_id = 1,
     content = "wait thats footage from an earthquake from 3 years ago in Indonesia",
     author_id = 1,
     timestamp = 1,
 )
-note = GlobalBrainAgents.Post(
+note = GPTPost(
     id = 3,
     parent_id = 2,
     content = "actually, it's from Mexico, and it's from last week. I'm a journalist and I was there. I can provide more information if you want.",
