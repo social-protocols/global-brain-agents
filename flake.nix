@@ -25,6 +25,9 @@
                     DBI
                     RSQLite
                     dplyr
+                    tidyr
+                    DiagrammeR
+                    igraph
                 ];
               };
             };

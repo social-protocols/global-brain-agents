@@ -2,81 +2,82 @@ library(shiny)
 library(shinydashboard)
 library(DBI)
 library(dplyr)
+library(tidyr)
+library(igraph)
+library(DiagrammeR)
 
-DATABASE_PATH <- file.path("..",Sys.getenv("DATABASE_PATH"))
+DATA_PATH <- Sys.getenv("DATA_PATH")
+DATABASE_PATH <- file.path(DATA_PATH, "social-network.db")
 
 db <- dbConnect(RSQLite::SQLite(), DATABASE_PATH)
 
 ui <- fluidPage(
-    h1("LLM Experiment: Posts"),
-    numericInput("post_id", "Post ID", value = 1, min = 1, max = 100),
-    tableOutput("complete_thread"),
-    hr(),
-    tableOutput("all_posts")
+  numericInput("post_id", "Post ID", min = 1, max = 100, step = 1, value = 1),
+  tableOutput("fullData"),
+  grVizOutput("graphView"),
 )
 
 server <- function(input, output, session) {
-    output$all_posts <- renderTable({
-        posts <- dbGetQuery(db, "SELECT * FROM posts") %>% data.frame()
-        votes <- dbGetQuery(db, "SELECT * FROM votes") %>% data.frame()
-        votes_summary <-
-            votes %>%
-            group_by(post_id) %>%
-            summarise(
-                upvotes = sum(upvote),
-                votes = n(),
-                downvotes = votes - upvotes
-            ) %>%
-            ungroup() %>%
-            relocate(post_id, upvotes, downvotes, votes)
-        posts %>%
-            left_join(votes_summary, by = c("id" = "post_id")) %>%
-            arrange(timestamp)
-    })
+  output$fullData <- renderTable({
+    test_data <- dbGetQuery(db, "SELECT * FROM ScoreData")
+    test_data %>% data.frame() %>% head()
+  })
 
-    output$complete_thread <- renderTable({
-        post_id <- input$post_id
-        post <- dbGetQuery(
-            db,
-            "SELECT * FROM posts WHERE id = ?",
-            params = list(post_id)
-        ) %>% data.frame()
-        parent_thread <- get_parent_thread(post_id, db)
-        votes <- dbGetQuery(db, "SELECT * FROM votes") %>%
-            data.frame()
-        votes_summary <-
-            votes %>%
-            group_by(post_id) %>%
-            summarise(
-                upvotes = sum(upvote),
-                votes = n(),
-                downvotes = votes - upvotes
-            ) %>%
-            ungroup() %>%
-            relocate(post_id, upvotes, downvotes, votes)
-        parent_thread %>%
-            inner_join(votes_summary, by = c("id" = "post_id")) %>%
-            arrange(timestamp)
-    })
-}
+  output$graphView <- renderGrViz({
+    post_id <- input$post_id
+    edge_list <-
+      dbGetQuery(
+        db,
+        "
+        WITH idsRecursive AS
+        (
+            SELECT postId, parentId, parentP FROM ScoreData
+            WHERE parentId = :post_id
+            UNION ALL
+            SELECT ScoreData.postId, ScoreData.parentId, ScoreData.parentP FROM ScoreData
+            JOIN idsRecursive p ON ScoreData.parentId = p.postId
+        )
+        SELECT * FROM idsRecursive
+        ",
+        params = list(post_id = post_id)
+      ) %>%
+      data.frame() %>%
+      filter(!is.na(parentId)) %>%
+      rename(from = parentId, to = postId)
 
-get_parent_thread <- function(post_id, db) {
-    post <- dbGetQuery(
-        db,
-        "SELECT * FROM posts WHERE id = ?",
-        params = list(post_id)
-    ) %>% data.frame()
-    parent <- dbGetQuery(
-        db,
-        "SELECT * FROM posts WHERE id = ?",
-        params = list(post$parent_id[1])
-    ) %>% data.frame()
-    if (nrow(parent) == 0) {
-        return(post)
-    } else {
-        parent_id <- parent$id[1]
-        return(post %>% rbind(get_parent_thread(parent_id, db)) %>% arrange(id))
-    }
+    node_list <- edge_list %>%
+      select(from, to) %>%
+      pivot_longer(cols = c(from, to), names_to = "name", values_to = "id") %>%
+      select(-name) %>%
+      distinct() %>%
+      mutate(label = id)
+
+    print(node_list)
+    print(edge_list)
+
+    net <- create_graph() %>%
+      add_nodes_from_table(
+        node_list,
+        label_col = label
+      ) %>%
+      add_edges_from_table(
+        edge_list,
+        from_col = from,
+        to_col = to,
+        from_to_map = id_external
+      ) %>%
+      set_edge_attrs(
+        edge_attr = color,
+        values = "black"
+      ) %>%
+      set_edge_attrs(
+        edge_attr = penwidth,
+        values = edge_list$parentP * 2
+      )
+
+    render_graph(net)
+  })
+
 }
 
 shinyApp(ui, server)
