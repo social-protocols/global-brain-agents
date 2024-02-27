@@ -37,7 +37,8 @@ function create_agent_based_model(config::RationalConfig)::Agents.ABM
         a = RationalAgent(
             id = i,
             belief = 0.5,
-            observations = [],
+            weight = 1.0,
+            observation = true,
             memory = nothing,
         )
         Agents.add_agent!(a, abm)
