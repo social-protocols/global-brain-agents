@@ -28,6 +28,20 @@
                     tidyr
                     DiagrammeR
                     igraph
+                    plotwidgets
+                ];
+              };
+              rstudioEnv = super.rstudioWrapper.override {
+                packages = with self.rPackages; [
+                    shiny
+                    shinydashboard
+                    DBI
+                    RSQLite
+                    dplyr
+                    tidyr
+                    DiagrammeR
+                    igraph
+                    plotwidgets
                 ];
               };
             };
@@ -43,6 +57,7 @@
               cloc
               julia-bin
               sqlite-interactive
+              rstudioEnv
               rEnv
             ];
           };
