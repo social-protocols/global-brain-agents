@@ -16,6 +16,9 @@ personas:
 test:
     julia --project scripts/voting-tests.jl
 
+wq:
+    sqlite3 $DATA_PATH/social-network.db < sql/working-query.sql
+
 up-code-stats:
     date > notes/abm-stats.md
     echo \`\`\` >> notes/abm-stats.md

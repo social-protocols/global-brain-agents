@@ -33,3 +33,9 @@ vectorized_hsl2col <- function(p) {
   cols <- lapply(mtxs, hsl2col)
   return(unlist(cols))
 }
+
+scale_zero_inf_to_range <- function(x, scale_factor, min, max) {
+  zero_one <- 1 - (1 / (scale_factor * x + 1))
+  return(zero_one * (max - min) + min)
+}
+
