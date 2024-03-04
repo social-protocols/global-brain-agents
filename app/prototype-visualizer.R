@@ -133,8 +133,17 @@ prototypeVisualizerServer <- function(id) {
 
     output$discussionTreeGraph <- renderGrViz({
       tag_id <- input$tagId
+      post_id <- input$postId
       score_data <- scoreDataTree()
-      net <- note_effect_graph(score_data)
+      if (nrow(score_data) > 0) {
+        net <- note_effect_graph(score_data)
+      } else {
+        net <- create_graph() %>%
+          add_node(
+            label = "Post does not exist",
+            node_aes = node_aes(shape = "plaintext")
+          )
+      }
       render_graph(net, layout = "tree")
     })
 
@@ -145,8 +154,11 @@ prototypeVisualizerServer <- function(id) {
         ggplot(aes(x = voteEventTime, y = score)) +
         scale_y_continuous(limits = c(-3, 3)) +
         geom_hline(yintercept = 0, color = "grey", size = 1) +
-        geom_line(size = 2, color = "forestgreen") +
-        geom_point(shape = 21, size = 6, color = "forestgreen", fill = "white") +
+        geom_line(linewidth = 2, color = "forestgreen") +
+        geom_point(
+          shape = 21, size = 6,
+          color = "forestgreen", fill = "white"
+        ) +
         theme(panel.background = element_rect(fill = "grey95"))
     })
 
