@@ -106,7 +106,6 @@ prototypeVisualizerServer <- function(id) {
     output$discussionTreeTable <- renderDataTable({
       scoreDataTree() %>%
         select(
-          tagId,
           parentId, postId, topNoteId,
           p, q, overallP,
           count, sampleSize,
@@ -122,13 +121,19 @@ prototypeVisualizerServer <- function(id) {
           overallP = round(overallP, 2),
           score = round(score, 2)
         ) %>%
+        relocate(parentId, postId, topNoteId, content) %>%
         rename(
-          informedP = p,
-          uninformedP = q,
-          upvotes = count,
-          totalVotes = sampleSize
-        ) %>%
-        relocate(parentId, postId, topNoteId, content)
+          Parent = parentId,
+          Post = postId,
+          `Top Note` = topNoteId,
+          Content = content,
+          Informed = p,
+          Uninformed = q,
+          Overall = overallP,
+          Upvotes = count,
+          `Total Votes` = sampleSize,
+          Score = score
+        )
     })
 
     output$discussionTreeGraph <- renderGrViz({

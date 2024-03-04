@@ -1,5 +1,6 @@
 library(dplyr)
 library(plotwidgets)
+library(DiagrammeR)
 
 surprisal <- function(p, unit = 2) {
   return(log(1 / p, unit))
@@ -27,7 +28,7 @@ sigmoid <- function(x) {
   return(1 / (1 + exp(-x)))
 }
 
-vectorized_hsl2col <- function(p) {
+hsl2col_vectorized <- function(p) {
   vct <- function(p) {
     sat <- scale_to_range(p, 0.0, 1.0, 0.0, 1.0)
     lum <- 1.0 - scale_to_range(p, 0.0, 1.0, 0.1, 0.4)
@@ -59,7 +60,7 @@ note_effect_graph <- function(score_data) {
     select(postId, p, sampleSize) %>%
     mutate(
       label = postId,
-      fillcolor = vectorized_hsl2col(p),
+      fillcolor = hsl2col_vectorized(p),
       height =
         scale_to_range(sampleSize, min_sample_size, max_sample_size, 0.3, 0.8),
       width =
@@ -79,8 +80,9 @@ note_effect_graph <- function(score_data) {
           mapply(relative_entropy, parentP, parentQ),
         stance_toward_parent = if_else(
           parentP < parentQ,
-          rgb(sigmoid(effect_on_parent_magnitude * 4), 0, 0),
-          rgb(0, sigmoid(effect_on_parent_magnitude * 4), 0)
+          "red", "forestgreen"
+          # rgb(sigmoid(effect_on_parent_magnitude * 4), 0, 0),
+          # rgb(0, sigmoid(effect_on_parent_magnitude * 4), 0)
         )
       )
 
@@ -93,7 +95,7 @@ note_effect_graph <- function(score_data) {
         penwidth = scale_to_range(
           effect_on_parent_magnitude,
           min_effect_on_parent_magnitude, max_effect_on_parent_magnitude,
-          0.8, 5
+          1.0, 5.0
         ),
         color = stance_toward_parent
       )
