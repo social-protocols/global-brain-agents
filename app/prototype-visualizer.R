@@ -49,39 +49,49 @@ prototypeVisualizerServer <- function(id) {
       dbConnect(RSQLite::SQLite(), PROTOTYPE_DATABASE_PATH)
     }
 
-    scoreDataTree <- reactive({
-      input$update
-      root_post_id <- input$postId
-      tag_id <- input$tagId
-      con <- prototype_db()
-      data <-
-        dbGetQuery(
-          con,
-          "
-            WITH tagInView AS (
-              SELECT *
-              FROM score
-              WHERE tagId = :tag_id
-            )
-            , idsRecursive AS (
-              SELECT *
-              FROM tagInView
-              WHERE postId = :root_post_id
-              UNION ALL
-              SELECT tagInView.*
-              FROM tagInView
-              JOIN idsRecursive p
-              ON tagInView.parentId = p.postId
-            )
-            SELECT * FROM idsRecursive
-          ",
-          params = list(root_post_id = root_post_id, tag_id = tag_id)
-        ) %>%
-        data.frame() %>%
-        mutate(parentId = if_else(postId == root_post_id, NA, parentId))
-      dbDisconnect(con)
-      data
-    })
+    scoreDataTree <- reactivePoll(
+      intervalMillis = 1000,
+      session,
+      checkFunc = function() {
+        con <- prototype_db()
+        check_data <-
+          dbGetQuery(con, "SELECT MAX(voteEventId) FROM Score") %>% data.frame()
+        dbDisconnect(con)
+        check_data
+      },
+      valueFunc = function() {
+        root_post_id <- input$postId
+        tag_id <- input$tagId
+        con <- prototype_db()
+        data <-
+          dbGetQuery(
+            con,
+            "
+              WITH tagInView AS (
+                SELECT *
+                FROM score
+                WHERE tagId = :tag_id
+              )
+              , idsRecursive AS (
+                SELECT *
+                FROM tagInView
+                WHERE postId = :root_post_id
+                UNION ALL
+                SELECT tagInView.*
+                FROM tagInView
+                JOIN idsRecursive p
+                ON tagInView.parentId = p.postId
+              )
+              SELECT * FROM idsRecursive
+            ",
+            params = list(root_post_id = root_post_id, tag_id = tag_id)
+          ) %>%
+          data.frame() %>%
+          mutate(parentId = if_else(postId == root_post_id, NA, parentId))
+        dbDisconnect(con)
+        data
+      }
+    )
 
     posts <- reactive({
       input$update
