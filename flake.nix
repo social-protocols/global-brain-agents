@@ -29,6 +29,7 @@
                     DiagrammeR
                     igraph
                     plotwidgets
+                    languageserver
                 ];
               };
               rstudioEnv = super.rstudioWrapper.override {
