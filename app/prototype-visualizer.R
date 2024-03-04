@@ -149,17 +149,24 @@ prototypeVisualizerServer <- function(id) {
 
     output$scorePlot <- renderPlot({
       scoreEvents() %>%
+        mutate(voteEventTime = as.numeric(voteEventTime)) %>%
         filter(tagId == input$tagId, postId == input$postId) %>%
         select(voteEventTime, score) %>%
         ggplot(aes(x = voteEventTime, y = score)) +
-        scale_y_continuous(limits = c(-3, 3)) +
-        geom_hline(yintercept = 0, color = "grey", size = 1) +
-        geom_line(linewidth = 2, color = "forestgreen") +
+        scale_y_continuous(limits = c(-3, 3), breaks = seq(-3, 3, 1)) +
+        geom_hline(yintercept = 0, color = "grey20", linewidth = 1) +
+        geom_line(linewidth = 2, color = "firebrick") +
         geom_point(
           shape = 21, size = 6,
-          color = "forestgreen", fill = "white"
+          color = "firebrick", fill = "white"
         ) +
-        theme(panel.background = element_rect(fill = "grey95"))
+        labs(x = "Time", y = "Score") +
+        theme(
+          panel.background = element_rect(fill = "grey95"),
+          panel.grid.major = element_line(color = "grey80"),
+          panel.grid.minor = element_line(color = "grey80"),
+          axis.text.x = element_blank()
+        )
     })
 
   })

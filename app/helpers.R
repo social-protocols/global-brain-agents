@@ -1,3 +1,6 @@
+library(dplyr)
+library(plotwidgets)
+
 surprisal <- function(p, unit = 2) {
   return(log(1 / p, unit))
 }
@@ -28,18 +31,13 @@ vectorized_hsl2col <- function(p) {
   vct <- function(p) {
     sat <- scale_to_range(p, 0.0, 1.0, 0.0, 1.0)
     lum <- 1.0 - scale_to_range(p, 0.0, 1.0, 0.1, 0.4)
-    return(c(110, sat, lum))
+    return(c(220, sat, lum))
   }
   vecs <- lapply(p, vct)
   mtxs <- lapply(vecs, matrix)
   cols <- lapply(mtxs, hsl2col)
   return(unlist(cols))
 }
-
-# scale_zero_inf_to_range <- function(x, scale_factor, min, max) {
-#   zero_one <- 1 - (1 / (scale_factor * x + 1))
-#   return(zero_one * (max - min) + min)
-# }
 
 scale_to_range <- function(x, from_min, from_max, to_min, to_max) {
   return(
