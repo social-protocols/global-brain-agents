@@ -7,8 +7,11 @@ agents:
 sqlite:
     sqlite3 $DATABASE_PATH
 
+# shiny:
+#     Rscript -e "shiny::runApp('app', port = 3456)"
+
 shiny:
-    Rscript -e "shiny::runApp('app', port = 3456)"
+  find app | entr -cnr bash -c "Rscript -e \"shiny::runApp('app', port = 3456)\""
 
 personas:
     julia --project scripts/personas.jl
@@ -18,6 +21,11 @@ test:
 
 wq:
     sqlite3 $DATA_PATH/social-network.db < sql/working-query.sql
+
+develop:
+  process-compose -f process-compose.yaml --tui=false up
+
+
 
 up-code-stats:
     date > notes/abm-stats.md

@@ -48,7 +48,7 @@ scale_to_range <- function(x, from_min, from_max, to_min, to_max) {
   )
 }
 
-note_effect_graph <- function(score_data) {
+note_effect_graph <- function(score_data, posts, show_content = FALSE) {
   edges <- score_data %>%
     select(parentId, postId, parentP, parentQ) %>%
     filter(!is.na(parentId))
@@ -61,16 +61,46 @@ note_effect_graph <- function(score_data) {
     mutate(
       label = postId,
       fillcolor = hsl2col_vectorized(p),
-      height =
-        scale_to_range(sampleSize, min_sample_size, max_sample_size, 0.3, 0.8),
-      width =
-        scale_to_range(sampleSize, min_sample_size, max_sample_size, 0.3, 0.8),
     )
+
+  if (!show_content) {
+    nodes <- nodes %>%
+      mutate(
+        height = scale_to_range(
+          sampleSize,
+          min_sample_size, max_sample_size,
+          0.3, 0.8
+        ),
+        width = scale_to_range(
+          sampleSize,
+          min_sample_size, max_sample_size,
+          0.3, 0.8
+        ),
+      )
+  }
+
+  if (show_content) {
+    nodes <- nodes %>%
+      left_join(
+        posts %>% select(id, content),
+        by = c("postId" = "id")
+      ) %>%
+      mutate(content = substr(content, 1, 100))
+  }
 
   net <- create_graph()
 
   if (nrow(nodes) != 0) {
-    net <- net %>% add_nodes_from_table(nodes, label_col = label)
+    net <- net %>%
+      add_nodes_from_table(nodes, label_col = label)
+
+    if (show_content) {
+      net <- net %>%
+        set_node_attr_to_display(attr = content) %>%
+        set_node_attrs(node_attr = shape, values = "rectangle") %>%
+        set_node_attrs(node_attr = fixedsize, values = TRUE) %>%
+        set_node_attrs(node_attr = width, values = 2.0)
+    }
   }
 
   if (nrow(edges) != 0) {

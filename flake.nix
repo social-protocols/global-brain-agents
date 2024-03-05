@@ -27,6 +27,7 @@
                     dplyr
                     tidyr
                     DiagrammeR
+                    r2d3
                     igraph
                     plotwidgets
                     languageserver
@@ -41,6 +42,7 @@
                     dplyr
                     tidyr
                     DiagrammeR
+                    r2d3
                     igraph
                     plotwidgets
                 ];
@@ -56,6 +58,10 @@
               just
               git
               cloc
+              entr
+              tldr
+              nodePackages.browser-sync
+              process-compose
               julia-bin
               sqlite-interactive
               rstudioEnv

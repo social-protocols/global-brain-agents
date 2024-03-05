@@ -3,10 +3,12 @@ library(shinydashboard)
 library(DBI)
 library(igraph)
 library(plotwidgets)
+library(r2d3)
 
 source("helpers.R")
 source("prototype-visualizer.R")
 source("simulation-visualizer.R")
+source("test-module.R")
 
 ui <- dashboardPage(
   skin = "black",

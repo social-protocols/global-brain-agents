@@ -1,0 +1,18 @@
+version: "0.5"
+
+processes:
+
+  start_server:
+    command: find app | entr bash -c 'just shiny'
+
+  browser_sync_reload:
+    command: find app | entr bash -c 'sleep 6; browser-sync reload --port 3001'
+
+  # once the web-server is running, proxy it through browser-sync
+  browser_sync:
+    command: |
+      # we don't use depends_on here, because the health-check periodically sends http requests forever
+      until $(curl --output /dev/null --silent --head --fail http://localhost:3456); do
+          sleep 1
+      done
+      browser-sync start --proxy "127.0.0.1:3456" --port 3001 --no-open
