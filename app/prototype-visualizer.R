@@ -192,10 +192,16 @@ prototypeVisualizerServer <- function(id) {
     })
 
     output$d3 <- renderD3({
-      score_data <- scoreDataTree()
+      posts <- posts() %>% select(id, content)
+
+      score_data <- scoreDataTree() %>%
+        mutate(
+          effect_on_parent_magnitude = relative_entropy(parentP, parentQ)
+        ) %>%
+        left_join(posts, by = c("postId" = "id")) %>%
+        identity()
       print(score_data)
       r2d3(
-        # data = as_d3_data(score_data),
         data = score_data,
         script = "bar-chart.js"
       )
