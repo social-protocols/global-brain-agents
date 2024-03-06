@@ -28,19 +28,19 @@ prototypeVisualizerUI <- function(id) {
               width = "100%"
             )
           ),
-          column(width = 4,
-            checkboxInput(
-              NS(id, "showPostText"), "Show Post Text",
-              value = TRUE
-            )
-          ),
+          # column(width = 4,
+          #   checkboxInput(
+          #     NS(id, "showPostText"), "Show Post Text",
+          #     value = TRUE
+          #   )
+          # ),
         ),
       ),
     ),
     fluidRow(
       tabsetPanel(id = "interactive-visualization-tabs",
-        tabPanel("D3", d3Output(NS(id, "d3"))),
-        tabPanel("Tree", grVizOutput(NS(id, "discussionTreeGraph"))),
+        tabPanel("Tree", d3Output(NS(id, "d3"))),
+        # tabPanel("Tree", grVizOutput(NS(id, "discussionTreeGraph"))),
         tabPanel("Table", dataTableOutput(NS(id, "discussionTreeTable"))),
         tabPanel("Score", plotOutput(NS(id, "scorePlot")))
       ),
@@ -151,23 +151,23 @@ prototypeVisualizerServer <- function(id) {
         )
     })
 
-    output$discussionTreeGraph <- renderGrViz({
-      tag_id <- input$tagId
-      post_id <- input$postId
-      show_content <- input$showPostText
-      score_data <- scoreDataTree()
-      posts <- posts()
-      if (nrow(score_data) > 0) {
-        net <- note_effect_graph(score_data, posts, show_content)
-      } else {
-        net <- create_graph() %>%
-          add_node(
-            label = "Post does not exist",
-            node_aes = node_aes(shape = "plaintext")
-          )
-      }
-      render_graph(net, layout = "tree")
-    })
+    # output$discussionTreeGraph <- renderGrViz({
+    #   tag_id <- input$tagId
+    #   post_id <- input$postId
+    #   show_content <- input$showPostText
+    #   score_data <- scoreDataTree()
+    #   posts <- posts()
+    #   if (nrow(score_data) > 0) {
+    #     net <- note_effect_graph(score_data, posts, show_content)
+    #   } else {
+    #     net <- create_graph() %>%
+    #       add_node(
+    #         label = "Post does not exist",
+    #         node_aes = node_aes(shape = "plaintext")
+    #       )
+    #   }
+    #   render_graph(net, layout = "tree")
+    # })
 
     output$scorePlot <- renderPlot({
       scoreEvents() %>%
@@ -203,7 +203,7 @@ prototypeVisualizerServer <- function(id) {
       print(score_data)
       r2d3(
         data = score_data,
-        script = "bar-chart.js"
+        script = "algorithm-visualization.js"
       )
     })
 
