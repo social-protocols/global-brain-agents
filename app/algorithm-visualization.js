@@ -1,7 +1,6 @@
 // TODO:
 // -- shift further right according to whether child node has siblings (so that posts are not plotted on top of each other)
 // -- plot edge with low opacity how much the note *would* have been affected by the parent if there were no sub top note
-// -- don't plot informed probability on leaf nodes
 // -- little line charts over time on edges and nodes
 
 try {
@@ -183,6 +182,7 @@ try {
     heightPercentageFunc,
     heightNaivePercentageFunc,
     opacityFunc,
+    displayFunc,
   ) {
     let group = groupSelection.append("g")
 
@@ -195,6 +195,7 @@ try {
       .attr("opacity", 0.05)
       .style("fill", "transparent")
       .attr("stroke", "black")
+      .attr("display", displayFunc)
 
     group
       .append("rect")
@@ -204,6 +205,7 @@ try {
       .attr("y", (d) => POST_RECT_HEIGHT - heightPercentageFunc(d) * POST_RECT_HEIGHT)
       .attr("opacity", opacityFunc)
       .style("fill", fill)
+      .attr("display", displayFunc)
 
     group
       .append("rect")
@@ -212,6 +214,7 @@ try {
       .attr("x", x)
       .attr("y", (d) => POST_RECT_HEIGHT - heightNaivePercentageFunc(d) * POST_RECT_HEIGHT)
       .style("fill", fill)
+      .attr("display", displayFunc)
 
     // group
     //   .append("line")
@@ -266,8 +269,9 @@ try {
     -55,
     "black",
     (d) => d.overallProb,
-    (d) => d.count / d.sampleSize,
+    (d) => d.count / d.sampleSize == 0 ? 0.05 : d.count / d.sampleSize,
     (d) => 1 - (1 / (1 + 0.3 * d.sampleSize)),
+    () => "inline"
   )
 
   barWithNumbers(
@@ -275,8 +279,9 @@ try {
     -85,
     "steelblue",
     (d) => d.p,
-    (d) => d.informedCount ? d.informedCount / d.informedTotal : 0,
+    (d) => d.informedCount && (d.informedCount !== 0) ? d.informedCount / d.informedTotal : 0.05,
     (d) => 1 - (1 / (1 + 0.3 * d.informedTotal)),
+    (d) => children[d.postId] ? "inline" : "none"
   )
 
 } catch (e) {

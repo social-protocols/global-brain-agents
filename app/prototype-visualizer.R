@@ -11,24 +11,21 @@ SERVICE_DATABASE_PATH <- Sys.getenv("SERVICE_DATABASE_PATH")
 
 prototypeVisualizerUI <- function(id) {
   fluidPage(
-    h1("Prototype Visualizer"),
     fluidRow(
-      box(
-        fluidRow(
-          column(width = 4,
-            numericInput(
-              NS(id, "tagId"), "Tag ID",
-              min = 1, max = 100, step = 1, value = 1,
-              width = "100%"
-            ),
+      fluidRow(
+        column(width = 4,
+          numericInput(
+            NS(id, "tagId"), "Tag ID",
+            min = 1, max = 100, step = 1, value = 1,
+            width = "100%"
           ),
-          column(width = 4,
-            numericInput(
-              NS(id, "postId"), "Post ID",
-              min = 1, max = 100, step = 1, value = 1,
-              width = "100%"
-            )
-          ),
+        ),
+        column(width = 4,
+          numericInput(
+            NS(id, "postId"), "Post ID",
+            min = 1, max = 100, step = 1, value = 1,
+            width = "100%"
+          )
         ),
       ),
     ),
