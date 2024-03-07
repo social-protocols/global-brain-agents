@@ -7,6 +7,7 @@ library(DiagrammeR)
 library(ggplot2)
 
 PROTOTYPE_DATABASE_PATH <- Sys.getenv("PROTOTYPE_DATABASE_PATH")
+SERVICE_DATABASE_PATH <- Sys.getenv("SERVICE_DATABASE_PATH")
 
 prototypeVisualizerUI <- function(id) {
   fluidPage(
@@ -28,19 +29,14 @@ prototypeVisualizerUI <- function(id) {
               width = "100%"
             )
           ),
-          # column(width = 4,
-          #   checkboxInput(
-          #     NS(id, "showPostText"), "Show Post Text",
-          #     value = TRUE
-          #   )
-          # ),
         ),
       ),
     ),
     fluidRow(
       tabsetPanel(id = "interactive-visualization-tabs",
-        tabPanel("Tree", d3Output(NS(id, "d3"))),
-        # tabPanel("Tree", grVizOutput(NS(id, "discussionTreeGraph"))),
+        tabPanel("Tree",
+          d3Output(NS(id, "d3"), width = "100%", height = "800px")
+        ),
         tabPanel("Table", dataTableOutput(NS(id, "discussionTreeTable"))),
         tabPanel("Score", plotOutput(NS(id, "scorePlot")))
       ),
@@ -52,6 +48,10 @@ prototypeVisualizerServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     prototype_db <- function() {
       dbConnect(RSQLite::SQLite(), PROTOTYPE_DATABASE_PATH)
+    }
+
+    service_db <- function() {
+      dbConnect(RSQLite::SQLite(), SERVICE_DATABASE_PATH)
     }
 
     scoreDataTree <- reactivePoll(
@@ -99,7 +99,6 @@ prototypeVisualizerServer <- function(id) {
     )
 
     posts <- reactive({
-      input$update
       input$tagId
       input$postId
       con <- prototype_db()
@@ -109,7 +108,6 @@ prototypeVisualizerServer <- function(id) {
     })
 
     scoreEvents <- reactive({
-      input$update
       input$tagId
       input$postId
       con <- prototype_db()
@@ -118,11 +116,18 @@ prototypeVisualizerServer <- function(id) {
       data
     })
 
+    detailedTallies <- reactive({
+      con <- service_db()
+      data <- dbGetQuery(con, "SELECT * FROM DetailedTally") %>% data.frame()
+      dbDisconnect(con)
+      data
+    })
+
     output$discussionTreeTable <- renderDataTable({
       scoreDataTree() %>%
         select(
           parentId, postId, topNoteId,
-          p, q, overallP,
+          p, q, overallProb,
           count, sampleSize,
           score
         ) %>%
@@ -133,7 +138,7 @@ prototypeVisualizerServer <- function(id) {
         mutate(
           p = round(p, 2),
           q = round(q, 2),
-          overallP = round(overallP, 2),
+          overallProb = round(overallProb, 2),
           score = round(score, 2)
         ) %>%
         relocate(parentId, postId, topNoteId, content) %>%
@@ -144,30 +149,12 @@ prototypeVisualizerServer <- function(id) {
           Content = content,
           Informed = p,
           Uninformed = q,
-          Overall = overallP,
+          Overall = overallProb,
           Upvotes = count,
           `Total Votes` = sampleSize,
           Score = score
         )
     })
-
-    # output$discussionTreeGraph <- renderGrViz({
-    #   tag_id <- input$tagId
-    #   post_id <- input$postId
-    #   show_content <- input$showPostText
-    #   score_data <- scoreDataTree()
-    #   posts <- posts()
-    #   if (nrow(score_data) > 0) {
-    #     net <- note_effect_graph(score_data, posts, show_content)
-    #   } else {
-    #     net <- create_graph() %>%
-    #       add_node(
-    #         label = "Post does not exist",
-    #         node_aes = node_aes(shape = "plaintext")
-    #       )
-    #   }
-    #   render_graph(net, layout = "tree")
-    # })
 
     output$scorePlot <- renderPlot({
       scoreEvents() %>%
@@ -193,12 +180,24 @@ prototypeVisualizerServer <- function(id) {
 
     output$d3 <- renderD3({
       posts <- posts() %>% select(id, content)
-
+      detailed_tallies <- detailedTallies() %>%
+        select(
+          parentId,
+          postId,
+          uninformedCount,
+          uninformedTotal,
+          informedCount,
+          informedTotal
+        )
       score_data <- scoreDataTree() %>%
         mutate(
           effect_on_parent_magnitude = relative_entropy(parentP, parentQ)
         ) %>%
         left_join(posts, by = c("postId" = "id")) %>%
+        left_join(
+          detailed_tallies,
+          by = c("postId" = "parentId", "topNoteId" = "postId")
+        ) %>%
         identity()
       print(score_data)
       r2d3(

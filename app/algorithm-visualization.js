@@ -1,9 +1,16 @@
+// TODO:
+// -- shift further right according to whether child node has siblings (so that posts are not plotted on top of each other)
+// -- plot edge with low opacity how much the note *would* have been affected by the parent if there were no sub top note
+// -- omit informed tally from plot
+// -- don't plot informed probability on leaf nodes
+// -- little line charts over time on edges and nodes
+
 try {
   let CHILD_NODE_SPREAD = 400
   let CHILD_PARENT_OFFSET = 150
 
-  let ROOT_POST_RECT_X = 80
-  let ROOT_POST_RECT_Y = 20
+  let ROOT_POST_RECT_X = 120
+  let ROOT_POST_RECT_Y = 30
 
   let POST_RECT_WIDTH = 250
   let POST_RECT_HEIGHT = 65
@@ -27,7 +34,7 @@ try {
     }
   })
 
-  function assignPositions(postId) {
+  function assignPositionsFromRootRecursive(postId) {
     let post = postLookup[postId]
     if (postId in children) {
       let spread = 0
@@ -39,7 +46,7 @@ try {
       children[postId].forEach((child, i) => {
         child.x = post.x + i * stepSize
         child.y = post.y + CHILD_PARENT_OFFSET
-        assignPositions(child["postId"])
+        assignPositionsFromRootRecursive(child["postId"])
       })
     }
     return post
@@ -48,7 +55,13 @@ try {
   let root = children["null"][0]
   root.x = ROOT_POST_RECT_X
   root.y = ROOT_POST_RECT_Y
-  assignPositions(root["postId"])
+  assignPositionsFromRootRecursive(root["postId"])
+
+  r2d3.svg.html("")
+
+  // -----------------------------------
+  // --- EDGES -------------------------
+  // -----------------------------------
 
   let edges = r2d3.data
     .filter((row) => row["parentId"] !== null)
@@ -59,16 +72,17 @@ try {
       }
     })
 
-  // -----------------------------------
-  // --- EDGES -------------------------
-  // -----------------------------------
-
   let edgeData = r2d3.svg
-    .selectAll("line")
-    .data(edges)
+    .append("g")
+    .selectAll("g")
+    .data(edges, (d) => d.parent["postId"] + "-" + d.post["postId"])
 
-  edgeData
-    .join("line")
+  let edgeGroup = edgeData
+    .join("g")
+    .attr("id", (d) => "edgeGroup" + d.parent["postId"] + "-" + d.post["postId"])
+
+  edgeGroup
+    .append("line")
     .attr("x1", (d) => d.parent.x + POST_RECT_WIDTH / 2)
     .attr("y1", (d) => d.parent.y + POST_RECT_HEIGHT)
     .attr("x2", (d) => d.post.x + POST_RECT_WIDTH / 2)
@@ -85,8 +99,8 @@ try {
     .attr("opacity", 0.3)
     .style("stroke-linecap", "round")
 
-  edgeData
-    .join("line")
+  edgeGroup
+    .append("line")
     .attr("x1", (d) => d.parent.x + POST_RECT_WIDTH / 2)
     .attr("y1", (d) => d.parent.y + POST_RECT_HEIGHT)
     .attr("x2", (d) => d.post.x + POST_RECT_WIDTH / 2)
@@ -107,11 +121,13 @@ try {
   // -----------------------------------
 
   let nodeData = r2d3.svg
+    .append("g")
     .selectAll("g")
     .data(r2d3.data, (d) => d["postId"])
 
   let nodeGroup = nodeData
     .join("g")
+    .attr("id", (d) => "nodeGroup" + d["postId"])
     .attr("transform", (d) => `translate(${d.x}, ${d.y})`)
 
   // Post container
@@ -142,71 +158,142 @@ try {
     .style("padding", "5px")
     .html((d) => d.content)
 
-  // Informed upvote probability bar
-  nodeGroup.append("rect")
-    .attr("x", -15)
-    .attr("y", (d) => POST_RECT_HEIGHT - d.p * POST_RECT_HEIGHT)
-    .attr("width", 10)
-    .attr("height", (d) => d.p * POST_RECT_HEIGHT)
-    .style("fill", "steelblue")
-    .attr("opacity", 0.5)
+  // https://stackoverflow.com/questions/2685911/is-there-a-way-to-round-numbers-into-a-reader-friendly-format-e-g-1-1k
+  function numberToText(number) {
+    decPlaces = 10
+    let abbrev = ["k", "m", "b", "t"]
+    for (let i = abbrev.length - 1; i >= 0; i--) {
+      let size = Math.pow(10, (i + 1) * 3)
+      if (size <= number) {
+        number = Math.round(number * decPlaces / size) / decPlaces
+        if ((number == 1000) && (i < abbrev.length - 1)) {
+          number = 1
+          i++
+        }
+        number += abbrev[i]
+        break
+      }
+    }
+    return number
+  }
 
-  // Informed upvote probability bar without Bayesian averaging
-  nodeGroup.append("rect")
-    .attr("x", -15)
-    .attr("y", (d) => POST_RECT_HEIGHT - d.p * POST_RECT_HEIGHT)
-    .attr("width", 4)
-    .attr("height", (d) => d.p * POST_RECT_HEIGHT) // TODO: without Bayesian averaging
-    .style("fill", "steelblue")
+  function barWithNumbers(
+    groupSelection,
+    x,
+    fill,
+    heightPercentageFunc,
+    heightNaivePercentageFunc,
+    opacityFunc,
+    upvoteCountFunc,
+    downvoteCountFunc,
+  ) {
+    let group = groupSelection.append("g")
 
-  // Uninformed upvote probability bar
-  nodeGroup.append("rect")
-    .attr("x", -30)
-    .attr("y", (d) => POST_RECT_HEIGHT - d.q * POST_RECT_HEIGHT)
-    .attr("width", 10)
-    .attr("height", (d) => d.q * POST_RECT_HEIGHT)
-    .style("fill", "black")
-    .attr("opacity", 0.5)
+    group
+      .append("rect")
+      .attr("width", 25)
+      .attr("height", POST_RECT_HEIGHT)
+      .attr("x", x)
+      .attr("y", 0)
+      .attr("opacity", 0.05)
+      .style("fill", "transparent")
+      .attr("stroke", "black")
 
-  // Uninformed upvote probability bar without Bayesian averaging
-  nodeGroup.append("rect")
-    .attr("x", -30)
-    .attr("y", (d) => POST_RECT_HEIGHT - d.q * POST_RECT_HEIGHT)
-    .attr("width", 4)
-    .attr("height", (d) => d.q * POST_RECT_HEIGHT) // TODO: without Bayesian averaging
-    .style("fill", "black")
+    group
+      .append("rect")
+      .attr("width", 25)
+      .attr("height", (d) => heightPercentageFunc(d) * POST_RECT_HEIGHT)
+      .attr("x", x)
+      .attr("y", (d) => POST_RECT_HEIGHT - heightPercentageFunc(d) * POST_RECT_HEIGHT)
+      .attr("opacity", opacityFunc)
+      .style("fill", fill)
 
-  let voteGroup = nodeGroup
-    .append("g")
-    .attr("transform", "translate(-50, 10)")
+    group
+      .append("rect")
+      .attr("width", 5)
+      .attr("height", (d) => heightNaivePercentageFunc(d) * POST_RECT_HEIGHT)
+      .attr("x", x)
+      .attr("y", (d) => POST_RECT_HEIGHT - heightNaivePercentageFunc(d) * POST_RECT_HEIGHT)
+      .style("fill", fill)
+
+    group
+      .append("text")
+      .text((d) => numberToText(upvoteCountFunc(d)))
+      .attr("width", 25)
+      .attr("x", x + 12.5)
+      .attr("y", -6)
+      .attr("text-anchor", "middle")
+
+    group
+      .append("text")
+      .text((d) => numberToText(downvoteCountFunc(d)))
+      .attr("width", 25)
+      .attr("x", x + 12.5)
+      .attr("y", POST_RECT_HEIGHT + 12)
+      .attr("text-anchor", "middle")
+
+    // group
+    //   .append("line")
+    //   .attr("x1", x)
+    //   .attr("x2", x + 25)
+    //   .attr("y1", POST_RECT_HEIGHT / 2 - 0.75)
+    //   .attr("y2", POST_RECT_HEIGHT / 2 - 0.75)
+    //   .attr("stroke", "black")
+    //   .attr("opacity", 0.7)
+    //   .style("stroke-dasharray", "5, 2")
+    //   .style("stroke-width", 1.5)
+  }
+
+  let voteGroup = nodeGroup.append("g")
 
   // Upvote arrow
   voteGroup
     .append("g")
-    .attr("transform", "translate(-15, 10)")
+    .attr("transform", `translate(-15, ${POST_RECT_HEIGHT / 2 - 15})`)
     .append("polygon")
     .attr("points", "0,10 10,10 5,0")
-    .attr("opacity", (d) => d.count / d.sampleSize)
+    .attr("opacity", 0.5)
 
   // Downvote arrow
   voteGroup
     .append("g")
-    .attr("transform", "translate(-15, 30)")
+    .attr("transform", `translate(-15, ${POST_RECT_HEIGHT / 2 + 5})`)
     .append("polygon")
     .attr("points", "0,0 10,0 5,10")
-    .attr("opacity", (d) => 1 - (d.count / d.sampleSize))
+    .attr("opacity", 0.5)
 
-  // Upvote count
-  voteGroup.append("text")
-    .text((d) => d.count)
-    .attr("x", 0)
-    .attr("y", 20)
+  barWithNumbers(
+    voteGroup,
+    -45,
+    "black",
+    (d) => d.overallProb,
+    (d) => d.count / d.sampleSize,
+    (d) => 1 - (1 / (1 + 0.3 * d.sampleSize)),
+    (d) => d.count,
+    (d) => d.sampleSize - d.count,
+  )
 
-  // Downvote count
-  voteGroup.append("text")
-    .text((d) => d.sampleSize - d.count)
-    .attr("x", 0)
-    .attr("y", 40)
+//   barWithNumbers(
+//     voteGroup,
+//     -75,
+//     "orange",
+//     (d) => d.q,
+//     (d) => d.uninformedCount ? d.uninformedCount / d.uninformedTotal : 0,
+//     (d) => 1 - (1 / (1 + 0.3 * d.uninformedTotal)),
+//     (d) => d.uninformedCount ? d.uninformedCount : 0,
+//     (d) => d.uninformedCount ? d.uninformedTotal - d.uninformedCount : 0,
+//   )
+
+  barWithNumbers(
+    voteGroup,
+    -75,
+    "steelblue",
+    (d) => d.p,
+    (d) => d.informedCount ? d.informedCount / d.informedTotal : 0,
+    (d) => 1 - (1 / (1 + 0.3 * d.informedTotal)),
+    (d) => d.informedCount ? d.informedCount : 0,
+    (d) => d.informedCount ? d.informedTotal - d.informedCount : 0,
+  )
 
 } catch (e) {
   console.error(e)
