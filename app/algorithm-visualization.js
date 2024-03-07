@@ -1,7 +1,6 @@
 // TODO:
 // -- shift further right according to whether child node has siblings (so that posts are not plotted on top of each other)
 // -- plot edge with low opacity how much the note *would* have been affected by the parent if there were no sub top note
-// -- omit informed tally from plot
 // -- don't plot informed probability on leaf nodes
 // -- little line charts over time on edges and nodes
 
@@ -184,8 +183,6 @@ try {
     heightPercentageFunc,
     heightNaivePercentageFunc,
     opacityFunc,
-    upvoteCountFunc,
-    downvoteCountFunc,
   ) {
     let group = groupSelection.append("g")
 
@@ -216,22 +213,6 @@ try {
       .attr("y", (d) => POST_RECT_HEIGHT - heightNaivePercentageFunc(d) * POST_RECT_HEIGHT)
       .style("fill", fill)
 
-    group
-      .append("text")
-      .text((d) => numberToText(upvoteCountFunc(d)))
-      .attr("width", 25)
-      .attr("x", x + 12.5)
-      .attr("y", -6)
-      .attr("text-anchor", "middle")
-
-    group
-      .append("text")
-      .text((d) => numberToText(downvoteCountFunc(d)))
-      .attr("width", 25)
-      .attr("x", x + 12.5)
-      .attr("y", POST_RECT_HEIGHT + 12)
-      .attr("text-anchor", "middle")
-
     // group
     //   .append("line")
     //   .attr("x1", x)
@@ -249,7 +230,7 @@ try {
   // Upvote arrow
   voteGroup
     .append("g")
-    .attr("transform", `translate(-15, ${POST_RECT_HEIGHT / 2 - 15})`)
+    .attr("transform", `translate(-20, ${POST_RECT_HEIGHT / 2 - 15})`)
     .append("polygon")
     .attr("points", "0,10 10,10 5,0")
     .attr("opacity", 0.5)
@@ -257,42 +238,45 @@ try {
   // Downvote arrow
   voteGroup
     .append("g")
-    .attr("transform", `translate(-15, ${POST_RECT_HEIGHT / 2 + 5})`)
+    .attr("transform", `translate(-20, ${POST_RECT_HEIGHT / 2 + 5})`)
     .append("polygon")
     .attr("points", "0,0 10,0 5,10")
     .attr("opacity", 0.5)
 
+  // Upvote count
+  voteGroup
+    .append("text")
+    .text((d) => numberToText(d.count))
+    .attr("width", 10)
+    .attr("x", -15)
+    .attr("y", POST_RECT_HEIGHT / 2 - 20)
+    .attr("text-anchor", "middle")
+
+  // Downvote count
+  voteGroup
+    .append("text")
+    .text((d) => numberToText(d.sampleSize - d.count))
+    .attr("width", 10)
+    .attr("x", -15)
+    .attr("y", POST_RECT_HEIGHT / 2 + 30)
+    .attr("text-anchor", "middle")
+
   barWithNumbers(
     voteGroup,
-    -45,
+    -55,
     "black",
     (d) => d.overallProb,
     (d) => d.count / d.sampleSize,
     (d) => 1 - (1 / (1 + 0.3 * d.sampleSize)),
-    (d) => d.count,
-    (d) => d.sampleSize - d.count,
   )
-
-//   barWithNumbers(
-//     voteGroup,
-//     -75,
-//     "orange",
-//     (d) => d.q,
-//     (d) => d.uninformedCount ? d.uninformedCount / d.uninformedTotal : 0,
-//     (d) => 1 - (1 / (1 + 0.3 * d.uninformedTotal)),
-//     (d) => d.uninformedCount ? d.uninformedCount : 0,
-//     (d) => d.uninformedCount ? d.uninformedTotal - d.uninformedCount : 0,
-//   )
 
   barWithNumbers(
     voteGroup,
-    -75,
+    -85,
     "steelblue",
     (d) => d.p,
     (d) => d.informedCount ? d.informedCount / d.informedTotal : 0,
     (d) => 1 - (1 / (1 + 0.3 * d.informedTotal)),
-    (d) => d.informedCount ? d.informedCount : 0,
-    (d) => d.informedCount ? d.informedTotal - d.informedCount : 0,
   )
 
 } catch (e) {
