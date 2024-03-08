@@ -216,6 +216,7 @@ try {
       .style("fill", fill)
       .attr("display", displayFunc)
 
+    // --- KEEP FOR POTENTIAL REUSE TO PLOT THE BAYESIAN PRIOR --->
     // group
     //   .append("line")
     //   .attr("x1", x)
@@ -226,6 +227,7 @@ try {
     //   .attr("opacity", 0.7)
     //   .style("stroke-dasharray", "5, 2")
     //   .style("stroke-width", 1.5)
+    // <------
   }
 
   let voteGroup = nodeGroup.append("g")
