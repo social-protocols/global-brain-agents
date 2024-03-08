@@ -1,3 +1,7 @@
+library(dplyr)
+library(plotwidgets)
+library(DiagrammeR)
+
 surprisal <- function(p, unit = 2) {
   # unit determines the unit of information at which we measure surprisal
   # base 2 is the default and it measures information in bits
@@ -28,17 +32,26 @@ relative_entropy <- function(p, q) {
   return(cross_entropy(p, q) - entropy(p))
 }
 
-data_to_json <- function(data) {
+sigmoid <- function(x) {
+  return(1 / (1 + exp(-x)))
+}
+
+hsl2col_vectorized <- function(p) {
+  vct <- function(p) {
+    sat <- scale_to_range(p, 0.0, 1.0, 0.0, 1.0)
+    lum <- 1.0 - scale_to_range(p, 0.0, 1.0, 0.1, 0.4)
+    return(c(220, sat, lum))
+  }
+  vecs <- lapply(p, vct)
+  mtxs <- lapply(vecs, matrix)
+  cols <- lapply(mtxs, hsl2col)
+  return(unlist(cols))
+}
+
+scale_to_range <- function(x, from_min, from_max, to_min, to_max) {
   return(
-    jsonlite::toJSON(
-      data,
-      dataframe = "rows",
-      null = "null", na = "null",
-      auto_unbox = TRUE, digits = getOption("shiny.json.digits", 16),
-      use_signif = TRUE, force = TRUE,
-      POSIXt = "ISO8601", UTC = TRUE,
-      rownames = FALSE, keep_vec_names = TRUE,
-      json_verabitm = TRUE
-    )
+    (x - from_min) / (from_max - from_min)
+    * (to_max - to_min)
+    + to_min
   )
 }
