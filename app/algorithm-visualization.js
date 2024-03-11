@@ -220,18 +220,13 @@ lineGroup
   .attr("r", 5)
   .attr("fill", "lightgrey")
 
-// User "icons"
-
 lineGroup
   .append("g")
   .selectAll("text")
   .data(rootPostVotes)
-  .join("text")
-  .text("☻")
-  .attr("x", (d) => scaleVoteId(d.voteEventId))
-  .attr("y", 150)
-  .attr("text-anchor", "middle")
-  .attr("font-size", 17)
+  .join("path")
+  .attr("d", "M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z")
+  .attr("transform", (d) => `translate(${scaleVoteId(d.voteEventId) - 5}, 140) scale(0.02)`)
   .attr("fill", (d) => scaleUserColor(d.userId))
 
 // -----------------------------------
