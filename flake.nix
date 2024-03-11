@@ -60,6 +60,7 @@
               cloc
               entr
               tldr
+              litecli
               nodePackages.browser-sync
               process-compose
               julia-bin

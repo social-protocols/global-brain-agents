@@ -35,7 +35,7 @@ server <- function(input, output, session) {
       dbConnect(RSQLite::SQLite(), SERVICE_DATABASE_PATH)
     }
 
-    scoreDataTree <- reactivePoll(
+    discussionTree <- reactivePoll(
       intervalMillis = 1000,
       session,
       checkFunc = function() {
@@ -47,37 +47,85 @@ server <- function(input, output, session) {
       },
       valueFunc = function() {
         root_post_id <- input$postId
-        tag_id <- 1 # global
         con <- prototype_db()
         data <-
           dbGetQuery(
             con,
             "
-              WITH tagInView AS (
+              WITH idsRecursive AS (
                 SELECT *
-                FROM score
-                WHERE tagId = :tag_id
-              )
-              , idsRecursive AS (
-                SELECT *
-                FROM tagInView
-                WHERE postId = :root_post_id
+                FROM post
+                WHERE id = :root_post_id
                 UNION ALL
-                SELECT tagInView.*
-                FROM tagInView
-                JOIN idsRecursive p
-                ON tagInView.parentId = p.postId
+                SELECT p2.*
+                FROM post p2
+                JOIN idsRecursive ON p2.parentId = idsRecursive.id
               )
-              SELECT * FROM idsRecursive
+              SELECT idsRecursive.*,
+                voteEventId -- TODO: rename to lastVoteEventId or similar
+                , voteEventTime
+                , topNoteId
+                , o
+                , oCount
+                , oSize
+                , p
+                , score
+              FROM idsRecursive
+              LEFT OUTER JOIN score ON idsRecursive.id = score.postId
             ",
-            params = list(root_post_id = root_post_id, tag_id = tag_id)
+            params = list(root_post_id = root_post_id)
           ) %>%
           data.frame() %>%
-          mutate(parentId = if_else(postId == root_post_id, NA, parentId))
+          mutate(parentId = if_else(id == root_post_id, NA, parentId)) %>%
+          rename(postId = id) # TODO: rename in table to postId
         dbDisconnect(con)
         data
       }
     )
+
+    # scoreDataTree <- reactivePoll(
+    #   intervalMillis = 1000,
+    #   session,
+    #   checkFunc = function() {
+    #     con <- prototype_db()
+    #     check_data <-
+    #       dbGetQuery(con, "SELECT MAX(voteEventId) FROM Score") %>% data.frame()
+    #     dbDisconnect(con)
+    #     check_data
+    #   },
+    #   valueFunc = function() {
+    #     root_post_id <- input$postId
+    #     tag_id <- 1 # global
+    #     con <- prototype_db()
+    #     data <-
+    #       dbGetQuery(
+    #         con,
+    #         "
+    #           WITH tagInView AS (
+    #             SELECT *
+    #             FROM score
+    #             WHERE tagId = :tag_id
+    #           )
+    #           , idsRecursive AS (
+    #             SELECT *
+    #             FROM tagInView
+    #             WHERE postId = :root_post_id
+    #             UNION ALL
+    #             SELECT tagInView.*
+    #             FROM tagInView
+    #             JOIN idsRecursive p
+    #             ON tagInView.parentId = p.postId
+    #           )
+    #           SELECT * FROM idsRecursive
+    #         ",
+    #         params = list(root_post_id = root_post_id, tag_id = tag_id)
+    #       ) %>%
+    #       data.frame() %>%
+    #       mutate(parentId = if_else(postId == root_post_id, NA, parentId))
+    #     dbDisconnect(con)
+    #     data
+    #   }
+    # )
 
     posts <- reactivePoll(
       intervalMillis = 1000,
@@ -120,32 +168,36 @@ server <- function(input, output, session) {
       data
     })
 
+    noteEffects <- reactive({
+      con <- prototype_db()
+      tree <- discussionTree()
+      data <- dbGetQuery(con, "SELECT * FROM effect") %>%
+        data.frame() %>%
+        filter(postId %in% tree$postId | noteId %in% tree$postId) %>%
+        mutate(magnitude = relative_entropy(p, q))
+      dbDisconnect(con)
+      data
+    })
+
     output$algoVisualization <- renderD3({
-      posts <- posts() %>% select(id, content)
-      detailed_tallies <- detailedTallies() %>%
-        select(
-          parentId, postId,
-          uninformedCount, uninformedTotal,
-          informedCount, informedTotal
-        )
-      scores <- scoreDataTree() %>%
-        mutate(effect_on_parent = relative_entropy(parentP, parentQ)) %>%
-        left_join(posts, by = c("postId" = "id")) %>%
-        left_join(
-          detailed_tallies,
-          by = c("postId" = "parentId", "topNoteId" = "postId")
-        ) %>%
-        identity()
       score_events <- scoreEvents()
       vote_events <- voteEvents()
 
+      note_effects <- noteEffects()
+      discussion_tree <- discussionTree()
+
+      print(discussion_tree)
+      print(note_effects)
+
+      discussion_tree_json <- data_to_json(discussion_tree)
+      note_effects_json <- data_to_json(note_effects)
       score_events_json <- data_to_json(score_events)
-      score_data_json <- data_to_json(scores)
       vote_events_json <- data_to_json(vote_events)
 
       r2d3(
         data = list(
-          score_data = score_data_json,
+          discussion_tree = discussion_tree_json,
+          note_effects = note_effects_json,
           score_events = score_events_json,
           vote_events = vote_events_json
         ),

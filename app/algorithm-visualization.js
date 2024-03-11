@@ -2,7 +2,10 @@
 // -- shift further right according to whether child node has siblings (so that posts are not plotted on top of each other)
 // -- plot edge with low opacity how much the note *would* have been affected by the parent if there were no sub top note
 
-let currentScores = r2d3.data.score_data
+try {
+
+let discussionTree = r2d3.data.discussion_tree
+let noteEffects = r2d3.data.note_effects
 let scoreEvents = r2d3.data.score_events
 let voteEvents = r2d3.data.vote_events
 
@@ -20,33 +23,51 @@ let LINEPLOT_Y_OFFSET = 120
 let LINEPLOT_WIDTH = 300
 
 let postLookup = {}
-currentScores.forEach((d) => {
+discussionTree.forEach((d) => {
   postLookup[d["postId"]] = d
 })
 
-let children = {}
-currentScores.forEach((d) => {
-  let parentId = d["parentId"]
-  if (!(parentId in children)) {
-    children[parentId] = [d]
+let edgeLookup = {}
+noteEffects.forEach((d) => {
+  edgeLookup[`${d["postId"]}-${d["noteId"]}`] = d
+})
+
+let childNodeLookup = {}
+let childEdgeLookup = {}
+discussionTree.forEach((post) => {
+  let parentId = post["parentId"]
+  let edge = edgeLookup[`${parentId}-${post["postId"]}`]
+
+  if (!(parentId in childNodeLookup)) {
+    childEdgeLookup[parentId] = [edge]
   } else {
-    children[parentId].push(d)
-    children[parentId].sort((a, b) => {
-      return b["effect_on_parent"] - a["effect_on_parent"]
+    childEdgeLookup[parentId].push(edge)
+    childEdgeLookup[parentId].sort((a, b) => b.magnitude - a.magnitude)
+  }
+
+  if (!(parentId in childNodeLookup)) {
+    childNodeLookup[parentId] = [post]
+  } else {
+    childNodeLookup[parentId].push(post)
+    childNodeLookup[parentId].sort((a, b) => {
+      let effectA = edgeLookup[`${parentId}-${a["postId"]}`].magnitude
+      let effectB = edgeLookup[`${parentId}-${b["postId"]}`].magnitude
+      return effectB - effectA
     })
   }
 })
 
+
 function assignPositionsFromRootRecursive(postId) {
   let post = postLookup[postId]
-  if (postId in children) {
+  if (postId in childNodeLookup) {
     let spread = 0
     let stepSize = 0
-    if (children[postId].length > 1) {
+    if (childNodeLookup[postId].length > 1) {
       spread = CHILD_NODE_SPREAD
-      stepSize = spread / (children[postId].length - 1)
+      stepSize = spread / (childNodeLookup[postId].length - 1)
     }
-    children[postId].forEach((child, i) => {
+    childNodeLookup[postId].forEach((child, i) => {
       child.x = post.x + i * stepSize
       child.y = post.y + CHILD_PARENT_OFFSET
       assignPositionsFromRootRecursive(child["postId"])
@@ -55,7 +76,7 @@ function assignPositionsFromRootRecursive(postId) {
   return post
 }
 
-let root = children["null"][0]
+let root = childNodeLookup["null"][0]
 root.x = ROOT_POST_RECT_X
 root.y = ROOT_POST_RECT_Y
 assignPositionsFromRootRecursive(root["postId"])
@@ -88,7 +109,7 @@ let pathDataP = rootPostScore.map((e) => {
 })
 let pathP = lineGenerator(pathDataP)
 let pathDataOverallProb = rootPostScore.map((e) => {
-  return [scaleVoteId(e.voteEventId), scaleProbability(e.overallProb)]
+  return [scaleVoteId(e.voteEventId), scaleProbability(e.o)] // TODO: rename back to overallProb
 })
 let pathOverallProb = lineGenerator(pathDataOverallProb)
 
@@ -203,36 +224,27 @@ lineGroup
 
 lineGroup
   .append("g")
-  .selectAll("circle")
+  .selectAll("text")
   .data(rootPostVotes)
-  .join("circle")
-  .attr("cx", (d) => scaleVoteId(d.voteEventId))
-  .attr("cy", 140)
-  .attr("r", 3)
+  .join("text")
+  .text("☻")
+  .attr("x", (d) => scaleVoteId(d.voteEventId))
+  .attr("y", 150)
+  .attr("text-anchor", "middle")
+  .attr("font-size", 17)
   .attr("fill", (d) => scaleUserColor(d.userId))
-
-lineGroup
-  .append("g")
-  .selectAll("ellipse")
-  .data(rootPostVotes)
-  .join("ellipse")
-  .attr("cx", (d) => scaleVoteId(d.voteEventId))
-  .attr("cy", 150)
-  .attr("rx", 3)
-  .attr("ry", 5)
-  .attr("fill", (d) => scaleUserColor(d.userId))
-
 
 // -----------------------------------
 // --- EDGES -------------------------
 // -----------------------------------
 
-let edges = currentScores
+let edges = discussionTree
   .filter((row) => row["parentId"] !== null)
   .map((row) => {
     return {
       parent: postLookup[row["parentId"]],
-      post: postLookup[row["postId"]]
+      post: postLookup[row["postId"]],
+      edgeData: edgeLookup[`${row["parentId"]}-${row["postId"]}`]
     }
   })
 
@@ -245,23 +257,23 @@ let edgeGroup = edgeData
   .join("g")
   .attr("id", (d) => "edgeGroup" + d.parent["postId"] + "-" + d.post["postId"])
 
-edgeGroup
-  .append("line")
-  .attr("x1", (d) => d.parent.x + POST_RECT_WIDTH / 2)
-  .attr("y1", (d) => d.parent.y + POST_RECT_HEIGHT)
-  .attr("x2", (d) => d.post.x + POST_RECT_WIDTH / 2)
-  .attr("y2", (d) => d.post.y)
-  .attr("stroke-width", (d) => {
-    // measured in bits (i.e., [0, Inf)), we clamp at 10 and scale down to [0, 1]
-    let maxWidth = 10
-    let width = Math.min(maxWidth, d.post.effect_on_parent) / maxWidth
-    return 1 + width * 100 + 30
-  })
-  .attr("stroke", (d) => {
-    return d.post.parentP > d.post.parentQ ? "forestgreen" : "tomato"
-  })
-  .attr("opacity", 0.3)
-  .style("stroke-linecap", "round")
+// edgeGroup
+//   .append("line")
+//   .attr("x1", (d) => d.parent.x + POST_RECT_WIDTH / 2)
+//   .attr("y1", (d) => d.parent.y + POST_RECT_HEIGHT)
+//   .attr("x2", (d) => d.post.x + POST_RECT_WIDTH / 2)
+//   .attr("y2", (d) => d.post.y)
+//   .attr("stroke-width", (d) => {
+//     // measured in bits (i.e., [0, Inf)), we clamp at 10 and scale down to [0, 1]
+//     let maxWidth = 10
+//     let width = Math.min(maxWidth, d.post.effect_on_parent) / maxWidth
+//     return 1 + width * 100 + 30
+//   })
+//   .attr("stroke", (d) => {
+//     return d.post.parentP > d.post.parentQ ? "forestgreen" : "tomato"
+//   })
+//   .attr("opacity", 0.3)
+//   .style("stroke-linecap", "round")
 
 edgeGroup
   .append("line")
@@ -272,11 +284,11 @@ edgeGroup
   .attr("stroke-width", (d) => {
     // measured in bits (i.e., [0, Inf)), we clamp at 10 and scale down to [0, 1]
     let maxWidth = 10
-    let width = Math.min(maxWidth, d.post.effect_on_parent) / maxWidth
+    let width = Math.min(maxWidth, d.edgeData.magnitude) / maxWidth
     return 1 + width * 200
   })
   .attr("stroke", (d) => {
-    return d.post.parentP > d.post.parentQ ? "forestgreen" : "tomato"
+    return d.edgeData.p > d.edgeData.q ? "forestgreen" : "tomato"
   })
   .style("stroke-linecap", "round")
 
@@ -287,7 +299,7 @@ edgeGroup
 let nodeData = r2d3.svg
   .append("g")
   .selectAll("g")
-  .data(currentScores, (d) => d["postId"])
+  .data(discussionTree, (d) => d["postId"])
 
 let nodeGroup = nodeData
   .join("g")
@@ -421,7 +433,7 @@ voteGroup
 // Upvote count
 voteGroup
   .append("text")
-  .text((d) => numberToText(d.count))
+  .text((d) => numberToText(d.oCount))
   .attr("width", 10)
   .attr("x", -15)
   .attr("y", POST_RECT_HEIGHT / 2 - 20)
@@ -430,7 +442,7 @@ voteGroup
 // Downvote count
 voteGroup
   .append("text")
-  .text((d) => numberToText(d.sampleSize - d.count))
+  .text((d) => numberToText(d.oSize - d.oCount))
   .attr("width", 10)
   .attr("x", -15)
   .attr("y", POST_RECT_HEIGHT / 2 + 30)
@@ -440,9 +452,9 @@ addUpvoteProbabilityBar(
   voteGroup,
   -55,
   "black",
-  (d) => d.overallProb,
-  (d) => d.count / d.sampleSize == 0 ? 0.05 : d.count / d.sampleSize,
-  (d) => 1 - (1 / (1 + 0.3 * d.sampleSize)),
+  (d) => d.o,
+  (d) => d.oCount / d.oSize == 0 ? 0.05 : d.oCount / d.oSize,
+  (d) => 1 - (1 / (1 + 0.3 * d.oSize)),
   () => "inline"
 )
 
@@ -452,10 +464,20 @@ addUpvoteProbabilityBar(
   "steelblue",
   (d) => d.p,
   (d) => {
-    return d.informedCount && (d.informedCount !== 0) ?
-      d.informedCount / d.informedTotal :
+    let edges = childEdgeLookup[d.postId] || []
+    let topNoteEdge = edges[0]
+    return topNoteEdge && (topNoteEdge.pCount !== 0) ?
+      topNoteEdge.pCount / topNoteEdge.pSize :
       0.05
   },
-  (d) => 1 - (1 / (1 + 0.3 * d.informedTotal)),
-  (d) => children[d.postId] ? "inline" : "none"
+  (d) => {
+    let edges = childEdgeLookup[d.postId] || []
+    let topNoteEdge = edges[0]
+    return topNoteEdge && 1 - (1 / (1 + 0.3 * topNoteEdge.pSize))
+  },
+  (d) => childNodeLookup[d.postId] ? "inline" : "none"
 )
+
+} catch (e) {
+  console.error(e)
+}
