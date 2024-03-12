@@ -1,4 +1,5 @@
 library(shiny)
+library(shinydashboard)
 library(DBI)
 library(dplyr)
 library(tidyr)
@@ -25,10 +26,6 @@ ui <- fluidPage(
 server <- function(input, output, session) {
     prototype_db <- function() {
       dbConnect(RSQLite::SQLite(), PROTOTYPE_DATABASE_PATH)
-    }
-
-    sim_db <- function() {
-      dbConnect(RSQLite::SQLite(), SIM_DATABASE_PATH)
     }
 
     service_db <- function() {
@@ -82,50 +79,6 @@ server <- function(input, output, session) {
         data
       }
     )
-
-    # scoreDataTree <- reactivePoll(
-    #   intervalMillis = 1000,
-    #   session,
-    #   checkFunc = function() {
-    #     con <- prototype_db()
-    #     check_data <-
-    #       dbGetQuery(con, "SELECT MAX(voteEventId) FROM Score") %>% data.frame()
-    #     dbDisconnect(con)
-    #     check_data
-    #   },
-    #   valueFunc = function() {
-    #     root_post_id <- input$postId
-    #     tag_id <- 1 # global
-    #     con <- prototype_db()
-    #     data <-
-    #       dbGetQuery(
-    #         con,
-    #         "
-    #           WITH tagInView AS (
-    #             SELECT *
-    #             FROM score
-    #             WHERE tagId = :tag_id
-    #           )
-    #           , idsRecursive AS (
-    #             SELECT *
-    #             FROM tagInView
-    #             WHERE postId = :root_post_id
-    #             UNION ALL
-    #             SELECT tagInView.*
-    #             FROM tagInView
-    #             JOIN idsRecursive p
-    #             ON tagInView.parentId = p.postId
-    #           )
-    #           SELECT * FROM idsRecursive
-    #         ",
-    #         params = list(root_post_id = root_post_id, tag_id = tag_id)
-    #       ) %>%
-    #       data.frame() %>%
-    #       mutate(parentId = if_else(postId == root_post_id, NA, parentId))
-    #     dbDisconnect(con)
-    #     data
-    #   }
-    # )
 
     posts <- reactivePoll(
       intervalMillis = 1000,
