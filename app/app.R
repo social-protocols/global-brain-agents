@@ -6,24 +6,32 @@ library(tidyr)
 library(r2d3)
 
 source("helpers.R")
+source("simulation-demo.R")
 
 PROTOTYPE_DATABASE_PATH <- Sys.getenv("PROTOTYPE_DATABASE_PATH")
 SERVICE_DATABASE_PATH <- Sys.getenv("SERVICE_DATABASE_PATH")
 SIM_DATABASE_PATH <- Sys.getenv("SIM_DATABASE_PATH")
 
-ui <- fluidPage(
-    fluidRow(
-      column(width = 2,
-        numericInput(
-          "postId", "Post ID",
-          min = 1, max = 100, step = 1, value = 1
-        ),
-      ),
-    ),
-    fluidRow(d3Output("algoVisualization", width = "100%", height = "1600px"))
+ui <- dashboardPage(
+  skin = "black",
+  dashboardHeader(title = "Global Brain"),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Simulation", tabName = "simulation-demo")
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      tabItem(tabName = "simulation-demo",
+        simulationVisualizerUI("simulationVisualizer")
+      )
+    )
+  ),
 )
 
 server <- function(input, output, session) {
+    simulationVisualizerServer("simulationVisualizer")
+
     prototype_db <- function() {
       dbConnect(RSQLite::SQLite(), PROTOTYPE_DATABASE_PATH)
     }
