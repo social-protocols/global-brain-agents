@@ -17,11 +17,28 @@ ui <- dashboardPage(
   dashboardHeader(title = "Global Brain"),
   dashboardSidebar(
     sidebarMenu(
+      # menuItem("Interactive", tabName = "interactive-demo"),
       menuItem("Simulation", tabName = "simulation-demo")
     )
   ),
   dashboardBody(
+    # tags$head(
+    #   tags$style(HTML(".content-wrapper { background-color: #FFFFFF }"))
+    # ),
     tabItems(
+      # tabItem(tabName = "interactive-demo",
+      #   fluidPage(
+      #       fluidRow(
+      #         column(width = 2,
+      #           numericInput(
+      #             "postId", "Post ID",
+      #             min = 1, max = 100, step = 1, value = 1
+      #           ),
+      #         ),
+      #       ),
+      #       fluidRow(d3Output("algoVisualization", width = "100%", height = "1600px"))
+      #   )
+      # ),
       tabItem(tabName = "simulation-demo",
         simulationVisualizerUI("simulationVisualizer")
       )
