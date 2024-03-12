@@ -415,7 +415,7 @@ voteGroup
   .attr("transform", `translate(-20, ${POST_RECT_HEIGHT / 2 - 15})`)
   .append("polygon")
   .attr("points", "0,10 10,10 5,0")
-  .attr("opacity", 0.5)
+  .attr("opacity", (d) => d.oCount / d.oSize)
 
 // Downvote arrow
 voteGroup
@@ -423,7 +423,7 @@ voteGroup
   .attr("transform", `translate(-20, ${POST_RECT_HEIGHT / 2 + 5})`)
   .append("polygon")
   .attr("points", "0,0 10,0 5,10")
-  .attr("opacity", 0.5)
+  .attr("opacity", (d) => (d.oSize - d.oCount) / d.oSize)
 
 // Upvote count
 voteGroup
