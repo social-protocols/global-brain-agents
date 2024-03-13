@@ -26,49 +26,9 @@ simulationDemoServer <- function(id) {
     # --- Data -----------------------------
     # --------------------------------------
 
-    score_events <- get_score_events() %>%
-        rename(
-          voteEventId = vote_event_id,
-          voteEventTime = vote_event_time,
-          tagId = tag_id,
-          postId = post_id,
-          topNoteId = top_note_id,
-          o = o,
-          oCount = o_count,
-          oSize = o_size,
-          p = p,
-          score = score,
-        )
-
-    vote_events <- get_vote_events() %>%
-      rename(
-        voteEventId = vote_event_id,
-        voteEventTime = vote_event_time,
-        userId = user_id,
-        tagId = tag_id,
-        parentId = parent_id,
-        postId = post_id,
-        noteId = note_id,
-        vote = vote,
-      )
-
-    effect_events <- get_effect_events() %>%
-      rename(
-        voteEventId = vote_event_id,
-        voteEventTime = vote_event_time,
-        tagId = tag_id,
-        postId = post_id,
-        noteId = note_id,
-        p = p,
-        q = q,
-        r = r,
-        pCount = p_count,
-        qCount = q_count,
-        rCount = r_count,
-        pSize = p_size,
-        qSize = q_size,
-        rSize = r_size,
-      )
+    score_events <- get_score_events()
+    vote_events <- get_vote_events()
+    effect_events <- get_effect_events()
 
     discussionTree <- reactive({
       root_post_id <- input$postId
