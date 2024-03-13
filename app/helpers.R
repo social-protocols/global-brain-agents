@@ -37,7 +37,7 @@ data_to_json <- function(data) {
       auto_unbox = TRUE, digits = getOption("shiny.json.digits", 16),
       use_signif = TRUE, force = TRUE,
       POSIXt = "ISO8601", UTC = TRUE,
-      rownames = FALSE, keep_vec_names = TRUE,
+      rownames = FALSE, keep_vec_names = FALSE,
       json_verabitm = TRUE
     )
   )
