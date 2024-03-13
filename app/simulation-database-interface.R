@@ -1,3 +1,6 @@
+library(DBI)
+library(dplyr)
+
 simulation_db <- function() {
   dbConnect(RSQLite::SQLite(), SIM_DATABASE_PATH)
 }
