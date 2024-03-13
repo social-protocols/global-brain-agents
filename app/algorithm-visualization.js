@@ -25,7 +25,6 @@ const LINEPLOT_Y_OFFSET = 120
 const LINEPLOT_WIDTH = 300
 const LINEPLOT_HEIGHT = 100
 
-let postLookup = {}
 const USER_ICON_SVG_PATH =
     "M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0" +
     " 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7" +
@@ -34,72 +33,72 @@ const USER_ICON_SVG_PATH =
 const UP_ARROW_SVG_POLYGON_COORDS = "0,10 10,10 5,0"
 const DOWN_ARROW_SVG_POLYGON_COORDS = "0,0 10,0 5,10"
 
+let postsByPostId = {}
 discussionTree.forEach((d) => {
-  postLookup[d["postId"]] = d
+  postsByPostId[d["postId"]] = d
 })
 
-let voteEventLookup = {}
+let voteEventsByPostId = {}
 voteEvents.forEach((voteEvent) => {
   let postId = voteEvent.postId
-  if (postLookup[postId]) {
-    if (!(postId in voteEventLookup)) {
-      voteEventLookup[postId] = [voteEvent]
+  if (postsByPostId[postId]) {
+    if (!(postId in voteEventsByPostId)) {
+      voteEventsByPostId[postId] = [voteEvent]
     } else {
-      voteEventLookup[postId].push(voteEvent)
+      voteEventsByPostId[postId].push(voteEvent)
     }
   }
 })
 
-let effectLookup = {}
+let effectsByPostIdNoteId = {}
 effects.forEach((effect) => {
-  effectLookup[`${effect["postId"]}-${effect["noteId"]}`] = effect
+  effectsByPostIdNoteId[`${effect["postId"]}-${effect["noteId"]}`] = effect
 })
 
-let childNodeLookup = {}
-let childEffectLookup = {}
+let childPostsByPostId = {}
+let childEffectsByPostId = {}
 discussionTree.forEach((post) => {
   let parentId = post["parentId"]
   if (parentId !== null) {
-    let effect = effectLookup[`${parentId}-${post["postId"]}`]
-    if (!(parentId in childNodeLookup)) {
-      childEffectLookup[parentId] = [effect]
+    let effect = effectsByPostIdNoteId[`${parentId}-${post["postId"]}`]
+    if (!(parentId in childPostsByPostId)) {
+      childEffectsByPostId[parentId] = [effect]
     } else {
-      childEffectLookup[parentId].push(effect)
-      childEffectLookup[parentId].sort((a, b) => b.magnitude - a.magnitude)
+      childEffectsByPostId[parentId].push(effect)
+      childEffectsByPostId[parentId].sort((a, b) => b.magnitude - a.magnitude)
     }
   }
 
-  if (!(parentId in childNodeLookup)) {
-    childNodeLookup[parentId] = [post]
+  if (!(parentId in childPostsByPostId)) {
+    childPostsByPostId[parentId] = [post]
   } else {
-    childNodeLookup[parentId].push(post)
-    childNodeLookup[parentId].sort((a, b) => {
-      let effectA = effectLookup[`${parentId}-${a["postId"]}`].magnitude
-      let effectB = effectLookup[`${parentId}-${b["postId"]}`].magnitude
+    childPostsByPostId[parentId].push(post)
+    childPostsByPostId[parentId].sort((a, b) => {
+      let effectA = effectsByPostIdNoteId[`${parentId}-${a["postId"]}`].magnitude
+      let effectB = effectsByPostIdNoteId[`${parentId}-${b["postId"]}`].magnitude
       return effectB - effectA
     })
   }
 })
 
 function assignPositionsFromRootRecursive(postId) {
-  let post = postLookup[postId]
-  if (postId in childNodeLookup) {
+  let post = postsByPostId[postId]
+  if (postId in childPostsByPostId) {
     let spread = 0
     let stepSize = 0
-    if (childNodeLookup[postId].length > 1) {
+    if (childPostsByPostId[postId].length > 1) {
       spread = CHILD_NODE_SPREAD
-      stepSize = spread / (childNodeLookup[postId].length - 1)
+      stepSize = spread / (childPostsByPostId[postId].length - 1)
     }
-    childNodeLookup[postId].forEach((child, i) => {
+    childPostsByPostId[postId].forEach((child, i) => {
       child.x = post.x + i * stepSize
       child.y = post.y + CHILD_PARENT_OFFSET
       assignPositionsFromRootRecursive(child["postId"])
     })
   }
-  return post
 }
 
-let root = childNodeLookup["null"][0]
+let root = childPostsByPostId["null"][0]
 root.x = ROOT_POST_RECT_X
 root.y = ROOT_POST_RECT_Y
 assignPositionsFromRootRecursive(root["postId"])
@@ -113,8 +112,8 @@ r2d3.svg.html("")
 let rootPostScore = scoreEvents.filter((d) => d["postId"] === root["postId"])
 let rootPostVotes = voteEvents.filter((d) => d["postId"] === root["postId"])
 
-let minVoteEventId = d3.min(voteEventLookup[root.postId], (d) => d.voteEventId)
-let maxVoteEventId = d3.max(voteEventLookup[root.postId], (d) => d.voteEventId)
+let minVoteEventId = d3.min(voteEventsByPostId[root.postId], (d) => d.voteEventId)
+let maxVoteEventId = d3.max(voteEventsByPostId[root.postId], (d) => d.voteEventId)
 
 let scaleProbability = d3.scaleLinear()
   .domain([0, 1])
@@ -171,7 +170,6 @@ lineGroup
   .attr("stroke-width", 2)
   .attr("opacity", 0.5)
   .attr("fill", "none")
-
 
 // Add up/down/clear sequence at the bottom of the chart
 
@@ -250,9 +248,9 @@ let edges = discussionTree
   .filter((row) => row["parentId"] !== null)
   .map((row) => {
     return {
-      parent: postLookup[row["parentId"]],
-      post: postLookup[row["postId"]],
-      edgeData: effectLookup[`${row["parentId"]}-${row["postId"]}`]
+      parent: postsByPostId[row["parentId"]],
+      post: postsByPostId[row["postId"]],
+      edgeData: effectsByPostIdNoteId[`${row["parentId"]}-${row["postId"]}`]
     }
   })
 
@@ -454,18 +452,18 @@ addUpvoteProbabilityBar(
   "steelblue",
   (d) => d.p,
   (d) => {
-    let edges = childEffectLookup[d.postId] || []
+    let edges = childEffectsByPostId[d.postId] || []
     let topNoteEdge = edges[0]
     return topNoteEdge && (topNoteEdge.pCount !== 0) ?
       topNoteEdge.pCount / topNoteEdge.pSize :
       0.05
   },
   (d) => {
-    let edges = childEffectLookup[d.postId] || []
+    let edges = childEffectsByPostId[d.postId] || []
     let topNoteEdge = edges[0]
     return topNoteEdge && 1 - (1 / (1 + 0.3 * topNoteEdge.pSize))
   },
-  (d) => childNodeLookup[d.postId] ? "inline" : "none"
+  (d) => childPostsByPostId[d.postId] ? "inline" : "none"
 )
 
 } catch (e) {
