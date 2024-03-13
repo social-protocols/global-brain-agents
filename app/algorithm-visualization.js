@@ -6,7 +6,6 @@ try {
 
 const period = r2d3.data.period
 const discussionTree = r2d3.data.discussion_tree.filter((post) => post.createdAt <= period)
-// const effectEvents = r2d3.data.effect_events.filter((effectEvent) => effectEvent.voteEventTime <= period)
 const effects = r2d3.data.effects
 const scoreEvents = r2d3.data.score_events
 const voteEvents = r2d3.data.vote_events
@@ -22,6 +21,7 @@ const POST_RECT_HEIGHT = 65
 
 const LINEPLOT_X_OFFSET = -5
 const LINEPLOT_Y_OFFSET = 120
+
 const LINEPLOT_WIDTH = 300
 const LINEPLOT_HEIGHT = 100
 
@@ -153,17 +153,6 @@ lineGroup
   .append("g")
   .call(yAxis)
 
-//   lineGroup
-//     .append("g")
-//     .append("rect")
-//     .attr("x", 0)
-//     .attr("y", 0)
-//     .attr("width", 260)
-//     .attr("height", 130)
-//     .attr("fill", "white")
-//     .attr("stroke", "black")
-//     .attr("opacity", 0.1)
-
 // Add lines
 lineGroup
   .append("path")
@@ -272,24 +261,6 @@ let edgeData = r2d3.svg
 let edgeGroup = edgeData
   .join("g")
   .attr("id", (d) => "edgeGroup" + d.parent["postId"] + "-" + d.post["postId"])
-
-// edgeGroup
-//   .append("line")
-//   .attr("x1", (d) => d.parent.x + POST_RECT_WIDTH / 2)
-//   .attr("y1", (d) => d.parent.y + POST_RECT_HEIGHT)
-//   .attr("x2", (d) => d.post.x + POST_RECT_WIDTH / 2)
-//   .attr("y2", (d) => d.post.y)
-//   .attr("stroke-width", (d) => {
-//     // measured in bits (i.e., [0, Inf)), we clamp at 10 and scale down to [0, 1]
-//     let maxWidth = 10
-//     let width = Math.min(maxWidth, d.post.effect_on_parent) / maxWidth
-//     return 1 + width * 100 + 30
-//   })
-//   .attr("stroke", (d) => {
-//     return d.post.parentP > d.post.parentQ ? "forestgreen" : "tomato"
-//   })
-//   .attr("opacity", 0.3)
-//   .style("stroke-linecap", "round")
 
 edgeGroup
   .append("line")
