@@ -5,8 +5,8 @@ library(dplyr)
 
 SIM_DATABASE_PATH <- Sys.getenv("SIM_DATABASE_PATH")
 
-source("helpers.R")
-source("database.R")
+source("utilities.R")
+source("simulation-database-interface.R")
 
 simulationDemoUI <- function(id) {
   fluidPage(

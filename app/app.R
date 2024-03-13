@@ -5,7 +5,7 @@ library(dplyr)
 library(tidyr)
 library(r2d3)
 
-source("helpers.R")
+source("utilities.R")
 source("simulation-demo.R")
 source("prototype-demo.R")
 

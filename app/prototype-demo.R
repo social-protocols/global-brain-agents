@@ -6,7 +6,7 @@ library(dplyr)
 PROTOTYPE_DATABASE_PATH <- Sys.getenv("PROTOTYPE_DATABASE_PATH")
 SERVICE_DATABASE_PATH <- Sys.getenv("SERVICE_DATABASE_PATH")
 
-source("helpers.R")
+source("utilities.R")
 
 prototypeDemoUI <- function(id) {
   fluidPage(
