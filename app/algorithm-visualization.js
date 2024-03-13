@@ -4,12 +4,12 @@
 
 try {
 
-let period = r2d3.data.period
-let discussionTree = r2d3.data.discussion_tree.filter((post) => post.createdAt <= period)
-// let effectEvents = r2d3.data.effect_events.filter((effectEvent) => effectEvent.voteEventTime <= period)
-let effects = r2d3.data.effects
-let scoreEvents = r2d3.data.score_events
-let voteEvents = r2d3.data.vote_events
+const period = r2d3.data.period
+const discussionTree = r2d3.data.discussion_tree.filter((post) => post.createdAt <= period)
+// const effectEvents = r2d3.data.effect_events.filter((effectEvent) => effectEvent.voteEventTime <= period)
+const effects = r2d3.data.effects
+const scoreEvents = r2d3.data.score_events
+const voteEvents = r2d3.data.vote_events
 
 const CHILD_NODE_SPREAD = 400
 const CHILD_PARENT_OFFSET = 150
