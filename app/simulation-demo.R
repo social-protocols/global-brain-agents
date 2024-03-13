@@ -10,12 +10,11 @@ source("database.R")
 
 simulationDemoUI <- function(id) {
   fluidPage(
-    # TODO: input from UI -> which simulation -> min post id
     selectInput(
       NS(id, "tagId"), "Simulation ID",
-      choices = c(1, 2, 3, 4, 5), selected = 1
-    ), # TODO
-    uiOutput(NS(id, "postIdSelector")),
+      choices = get_simulation_choices(), selected = 1
+    ),
+    uiOutput(NS(id, "simulationControls")),
     d3Output(NS(id, "algoVisualization")),
   )
 }
@@ -23,20 +22,6 @@ simulationDemoUI <- function(id) {
 simulationDemoServer <- function(id) {
   moduleServer(id, function(input, output, session) {
 
-    output$postIdSelector <- renderUI({
-      tag_id <- input$tagId
-      con <- simulation_db()
-      choices <-
-        dbGetQuery(
-          con,
-          "SELECT distinct post_id FROM VoteEvent WHERE tag_id = :tag_id",
-          params = list(tag_id = tag_id)
-        ) %>%
-        data.frame() %>%
-        pull()
-      selectInput(
-        NS(id, "postId"), "Post ID",
-        choices = choices, selected = 1
     # --------------------------------------
     # --- Data -----------------------------
     # --------------------------------------
@@ -143,16 +128,58 @@ simulationDemoServer <- function(id) {
       data
     })
 
+    # --------------------------------------
+    # --- UI Controls ----------------------
+    # --------------------------------------
 
+    output$simulationControls <- renderUI({
+      tag_id <- input$tagId
       con <- simulation_db()
-      tree <- discussionTree()
-      data <- dbGetQuery(con, "SELECT * FROM effect") %>%
+
+      post_choices <-
+        dbGetQuery(
+          con,
+          "
+            SELECT DISTINCT post_id
+            FROM VoteEvent
+            WHERE tag_id = :tag_id
+          ",
+          params = list(tag_id = tag_id)
+        ) %>%
         data.frame() %>%
-        filter(post_id %in% tree$post_id | note_id %in% tree$post_id) %>%
-        mutate(magnitude = relative_entropy(p, q))
+        pull()
+
+      period_choices <-
+        dbGetQuery(
+          con,
+          "
+            SELECT DISTINCT vote_event_time
+            FROM VoteEvent
+            WHERE tag_id = :tag_id
+          ",
+          params = list(tag_id = tag_id)
+        ) %>%
+        data.frame() %>%
+        pull()
       dbDisconnect(con)
-      data
+      min_period <- ifelse(length(period_choices) > 0, min(period_choices), 1)
+      max_period <- ifelse(length(period_choices) > 0, max(period_choices), 1)
+
+      div(
+        selectInput(
+          NS(id, "postId"), "Post ID",
+          choices = post_choices, selected = 1
+        ),
+        numericInput(
+          NS(id, "period"), "Period",
+          min = min_period, max = max_period, value = min_period, step = 1
+        )
+      )
     })
+
+    # --------------------------------------
+    # --- Visualization --------------------
+    # --------------------------------------
 
     output$algoVisualization <- renderD3({
       period <- input$period
