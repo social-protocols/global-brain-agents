@@ -9,18 +9,19 @@ let noteEffects = r2d3.data.note_effects
 let scoreEvents = r2d3.data.score_events
 let voteEvents = r2d3.data.vote_events
 
-let CHILD_NODE_SPREAD = 400
-let CHILD_PARENT_OFFSET = 150
+const CHILD_NODE_SPREAD = 400
+const CHILD_PARENT_OFFSET = 150
 
-let ROOT_POST_RECT_X = 450
-let ROOT_POST_RECT_Y = 30
+const ROOT_POST_RECT_X = 450
+const ROOT_POST_RECT_Y = 30
 
-let POST_RECT_WIDTH = 250
-let POST_RECT_HEIGHT = 65
+const POST_RECT_WIDTH = 250
+const POST_RECT_HEIGHT = 65
 
-let LINEPLOT_X_OFFSET = -5
-let LINEPLOT_Y_OFFSET = 120
-let LINEPLOT_WIDTH = 300
+const LINEPLOT_X_OFFSET = -5
+const LINEPLOT_Y_OFFSET = 120
+const LINEPLOT_WIDTH = 300
+const LINEPLOT_HEIGHT = 100
 
 let postLookup = {}
 discussionTree.forEach((d) => {
