@@ -26,10 +26,7 @@
                     RSQLite
                     dplyr
                     tidyr
-                    DiagrammeR
                     r2d3
-                    igraph
-                    plotwidgets
                     languageserver
                 ];
               };
@@ -41,10 +38,7 @@
                     RSQLite
                     dplyr
                     tidyr
-                    DiagrammeR
                     r2d3
-                    igraph
-                    plotwidgets
                 ];
               };
             };
