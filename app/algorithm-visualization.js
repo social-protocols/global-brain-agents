@@ -4,8 +4,10 @@
 
 try {
 
-let discussionTree = r2d3.data.discussion_tree
-let noteEffects = r2d3.data.note_effects
+let period = r2d3.data.period
+let discussionTree = r2d3.data.discussion_tree.filter((post) => post.createdAt <= period)
+// let effectEvents = r2d3.data.effect_events.filter((effectEvent) => effectEvent.voteEventTime <= period)
+let effects = r2d3.data.effects
 let scoreEvents = r2d3.data.score_events
 let voteEvents = r2d3.data.vote_events
 
@@ -28,22 +30,35 @@ discussionTree.forEach((d) => {
   postLookup[d["postId"]] = d
 })
 
-let edgeLookup = {}
-noteEffects.forEach((d) => {
-  edgeLookup[`${d["postId"]}-${d["noteId"]}`] = d
+let voteEventLookup = {}
+voteEvents.forEach((voteEvent) => {
+  let postId = voteEvent.postId
+  if (postLookup[postId]) {
+    if (!(postId in voteEventLookup)) {
+      voteEventLookup[postId] = [voteEvent]
+    } else {
+      voteEventLookup[postId].push(voteEvent)
+    }
+  }
+})
+
+let effectLookup = {}
+effects.forEach((effect) => {
+  effectLookup[`${effect["postId"]}-${effect["noteId"]}`] = effect
 })
 
 let childNodeLookup = {}
-let childEdgeLookup = {}
+let childEffectLookup = {}
 discussionTree.forEach((post) => {
   let parentId = post["parentId"]
-  let edge = edgeLookup[`${parentId}-${post["postId"]}`]
-
-  if (!(parentId in childNodeLookup)) {
-    childEdgeLookup[parentId] = [edge]
-  } else {
-    childEdgeLookup[parentId].push(edge)
-    childEdgeLookup[parentId].sort((a, b) => b.magnitude - a.magnitude)
+  if (parentId !== null) {
+    let effect = effectLookup[`${parentId}-${post["postId"]}`]
+    if (!(parentId in childNodeLookup)) {
+      childEffectLookup[parentId] = [effect]
+    } else {
+      childEffectLookup[parentId].push(effect)
+      childEffectLookup[parentId].sort((a, b) => b.magnitude - a.magnitude)
+    }
   }
 
   if (!(parentId in childNodeLookup)) {
@@ -51,13 +66,12 @@ discussionTree.forEach((post) => {
   } else {
     childNodeLookup[parentId].push(post)
     childNodeLookup[parentId].sort((a, b) => {
-      let effectA = edgeLookup[`${parentId}-${a["postId"]}`].magnitude
-      let effectB = edgeLookup[`${parentId}-${b["postId"]}`].magnitude
+      let effectA = effectLookup[`${parentId}-${a["postId"]}`].magnitude
+      let effectB = effectLookup[`${parentId}-${b["postId"]}`].magnitude
       return effectB - effectA
     })
   }
 })
-
 
 function assignPositionsFromRootRecursive(postId) {
   let post = postLookup[postId]
@@ -91,13 +105,14 @@ r2d3.svg.html("")
 let rootPostScore = scoreEvents.filter((d) => d["postId"] === root["postId"])
 let rootPostVotes = voteEvents.filter((d) => d["postId"] === root["postId"])
 
-let maxVoteEventId = d3.max(voteEvents, (d) => d.voteEventId)
+let minVoteEventId = d3.min(voteEventLookup[root.postId], (d) => d.voteEventId)
+let maxVoteEventId = d3.max(voteEventLookup[root.postId], (d) => d.voteEventId)
 
 let scaleProbability = d3.scaleLinear()
   .domain([0, 1])
-  .range([100, 0])
+  .range([LINEPLOT_HEIGHT, 0])
 let scaleVoteId = d3.scaleLinear()
-  .domain([0, maxVoteEventId])
+  .domain([minVoteEventId, maxVoteEventId])
   .range([0, LINEPLOT_WIDTH])
 let scaleUserColor = d3.scaleOrdinal()
   .domain(rootPostVotes.map((d) => d.userId))
@@ -240,7 +255,7 @@ let edges = discussionTree
     return {
       parent: postLookup[row["parentId"]],
       post: postLookup[row["postId"]],
-      edgeData: edgeLookup[`${row["parentId"]}-${row["postId"]}`]
+      edgeData: effectLookup[`${row["parentId"]}-${row["postId"]}`]
     }
   })
 
@@ -460,14 +475,14 @@ addUpvoteProbabilityBar(
   "steelblue",
   (d) => d.p,
   (d) => {
-    let edges = childEdgeLookup[d.postId] || []
+    let edges = childEffectLookup[d.postId] || []
     let topNoteEdge = edges[0]
     return topNoteEdge && (topNoteEdge.pCount !== 0) ?
       topNoteEdge.pCount / topNoteEdge.pSize :
       0.05
   },
   (d) => {
-    let edges = childEdgeLookup[d.postId] || []
+    let edges = childEffectLookup[d.postId] || []
     let topNoteEdge = edges[0]
     return topNoteEdge && 1 - (1 / (1 + 0.3 * topNoteEdge.pSize))
   },
