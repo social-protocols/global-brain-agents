@@ -31,6 +31,9 @@ const USER_ICON_SVG_PATH =
     " 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7" +
     " 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448" +
     " 383.8 368.2 304 269.7 304H178.3z"
+const UP_ARROW_SVG_POLYGON_COORDS = "0,10 10,10 5,0"
+const DOWN_ARROW_SVG_POLYGON_COORDS = "0,0 10,0 5,10"
+
 discussionTree.forEach((d) => {
   postLookup[d["postId"]] = d
 })
@@ -406,7 +409,7 @@ voteGroup
   .append("g")
   .attr("transform", `translate(-20, ${POST_RECT_HEIGHT / 2 - 15})`)
   .append("polygon")
-  .attr("points", "0,10 10,10 5,0")
+  .attr("points", UP_ARROW_SVG_POLYGON_COORDS)
   .attr("opacity", (d) => d.oCount / d.oSize)
 
 // Downvote arrow
@@ -414,7 +417,7 @@ voteGroup
   .append("g")
   .attr("transform", `translate(-20, ${POST_RECT_HEIGHT / 2 + 5})`)
   .append("polygon")
-  .attr("points", "0,0 10,0 5,10")
+  .attr("points", DOWN_ARROW_SVG_POLYGON_COORDS)
   .attr("opacity", (d) => (d.oSize - d.oCount) / d.oSize)
 
 // Upvote count
