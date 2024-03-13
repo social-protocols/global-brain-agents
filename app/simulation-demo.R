@@ -7,7 +7,7 @@ SIM_DATABASE_PATH <- Sys.getenv("SIM_DATABASE_PATH")
 
 source("helpers.R")
 
-simulationVisualizerUI <- function(id) {
+simulationDemoUI <- function(id) {
   fluidPage(
     # TODO: input from UI -> which simulation -> min post id
     selectInput(
@@ -19,7 +19,7 @@ simulationVisualizerUI <- function(id) {
   )
 }
 
-simulationVisualizerServer <- function(id) {
+simulationDemoServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     simulation_db <- function() {
       dbConnect(RSQLite::SQLite(), SIM_DATABASE_PATH)
