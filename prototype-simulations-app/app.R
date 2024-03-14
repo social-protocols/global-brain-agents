@@ -18,16 +18,16 @@ ui <- dashboardPage(
   dashboardHeader(title = "Global Brain"),
   dashboardSidebar(
     sidebarMenu(
-      # menuItem("Prototype", tabName = "prototype-demo"),
+      menuItem("Prototype", tabName = "prototype-demo"),
       menuItem("Simulation", tabName = "simulation-demo")
     )
   ),
   dashboardBody(
-    # tags$head(
-    #   tags$style(HTML(".content-wrapper { background-color: #FFFFFF }"))
-    # ),
+    tags$head(
+      tags$style(HTML(".content-wrapper { background-color: #FFFFFF }"))
+    ),
     tabItems(
-      # tabItem(tabName = "prototype-demo", prototypeDemoUI("prototypeDemo")),
+      tabItem(tabName = "prototype-demo", prototypeDemoUI("prototypeDemo")),
       tabItem(tabName = "simulation-demo", simulationDemoUI("simulationDemo"))
     )
   ),
@@ -35,7 +35,7 @@ ui <- dashboardPage(
 
 server <- function(input, output, session) {
   simulationDemoServer("simulationDemo")
-  # prototypeDemoServer("prototypeDemo")
+  prototypeDemoServer("prototypeDemo")
 }
 
 shinyApp(ui, server)
