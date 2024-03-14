@@ -1,6 +1,5 @@
 <h1 align="center" style="border-bottom: none">
-    <div>Global Brain Algorithm Validation Experiments </div>
-    <div><span style="font-style: italic">(Public Archive)</span></div>
+    Global Brain Algorithm Validation Experiments (Archived)
 </h1>
 
 >[!NOTE]
